@@ -26,9 +26,10 @@ const historico = JSON.parse(readFileSync(HISTORICO_JSON(), "utf8")) as Historic
 const cliente = postgres(url, { max: 1 });
 try {
   const db = drizzle(cliente, { schema });
-  const r = await cargarHistorico(db, historico);
+  const inicio = Date.now();
+  const r = await cargarHistorico(db, historico, (m) => console.log(`  ${m}`));
   console.log(
-    `✓ Cargado: ${r.clientes} clientes · ${r.buses} buses · ${r.productos} productos · ${r.trabajos} trabajos · ${r.presupuestos} presupuestos · ${r.items} items`,
+    `✓ Cargado en ${((Date.now() - inicio) / 1000).toFixed(1)} s: ${r.clientes} clientes · ${r.buses} buses · ${r.productos} productos · ${r.trabajos} trabajos · ${r.presupuestos} presupuestos · ${r.items} items`,
   );
 } finally {
   await cliente.end();
