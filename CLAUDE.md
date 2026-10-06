@@ -66,7 +66,7 @@ docs/          PLAN.md (fases), DESPLIEGUE.md (cuentas y deploy)
 
 ## Comandos
 
-Requiere **Node 22.12+** (recomendado 24, ver `.nvmrc`; `.npmrc` tiene `engine-strict`). Con Node 20 fallan wrangler/miniflare y `npm run dev`.
+Requiere **Node 22.12+** (en Windows se usa nvm: `nvm use 24`) (recomendado 24, ver `.nvmrc`; `.npmrc` tiene `engine-strict`). Con Node 20 fallan wrangler/miniflare y `npm run dev`.
 
 ```bash
 npm run dev               # app local (Vite + Worker en workerd) — usa .dev.vars
@@ -79,6 +79,7 @@ npm run db:migrate        # aplicar migraciones a DATABASE_URL (.env)
 npm run db:seed-usuarios  # usuarios desde SEED_USUARIOS (.env)
 npm run etl:parse         # Excel → ../_etl/{historico.json,revision.md,estadisticas.md}
 npm run etl:load          # historico.json → base (idempotente)
+npm run configurar:produccion  # pide la URL de production: migra, siembra y la guarda como secreto del Worker
 ```
 
 ## ETL del histórico (fase 1)
@@ -109,7 +110,11 @@ Ver `docs/PLAN.md`. Actual:
 
 - [x] Fase 0 — Base: estructura, Worker + SPA, auth con solicitudes de acceso, página Usuarios, CI, privacidad
 - [x] Fase 1 — Esquema + ETL (parse, reporte, carga probada con PGlite)
-- [ ] Cuentas: Neon, Cloudflare (Workers Builds + Access), Google Cloud (cuenta de servicio). Se crean desde el navegador del dueño: el navegador integrado no pasa la verificación anti-bots y el entorno de Claude no llega a las APIs de Neon/Cloudflare.
+- [x] Neon: proyecto con ramas `production` (app publicada) y `dev` (local, sin auto-borrado). `dev` ya migrada.
+- [x] Cloudflare Workers Builds conectado al repo: push a `main` → deploy en `*.workers.dev`.
+- [ ] Producción: secreto `DATABASE_URL` + migración (`npm run configurar:produccion`), Zero Trust Free + Access, Google Cloud.
+  Notas: el navegador integrado no pasa la verificación anti-bots de los registros; el entorno de Claude
+  no llega a las APIs de Neon/Cloudflare; Claude no escribe contraseñas en formularios (las pega el dueño).
 - [ ] Fase 2 — Estadísticas en la app
 - [ ] Fase 3 — CRUD clientes / buses / productos
 - [ ] Fase 4 — Editor de presupuestos + PDF
