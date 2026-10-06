@@ -58,7 +58,8 @@ src/
   client/      React (páginas en client/pages, componentes en client/components)
   worker/      Hono: index.ts (rutas), middleware/auth.ts, db.ts, env.ts
   db/schema.ts Esquema Drizzle (fuente de verdad de la base)
-  shared/      Utilidades usadas por app y scripts (dinero, fechas, texto) + tests
+  db/estadisticas.ts  Consultas de la página Estadísticas
+  shared/      Utilidades usadas por app y scripts (dinero, fechas, texto, categorías, estadísticas) + tests
 scripts/
   etl/         Migración de los Excel históricos (ver abajo)
   seed-usuarios.ts, check-privacidad.mjs
@@ -120,10 +121,16 @@ Ver `docs/PLAN.md`. Actual:
   reusable "Cualquier correo verificado (la app autoriza)" = Everyone, sesión de 1 mes. Login por PIN al correo.
   `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD` van en `wrangler.jsonc` → `vars` (no son secretos).
 - [ ] Cargar histórico revisado a producción (`etl:load:produccion`); Google Cloud (fase 5).
+- [x] Login con Google en Access: proyecto GCP `reconstructora-presupuestos`, cliente OAuth "Cloudflare Access"
+  (redirect `https://<equipo>.cloudflareaccess.com/cdn-cgi/access/callback`). Hay que tener la app publicada (no en prueba).
   `overrides.json` (fuera del repo) ya une 3 pares de clientes duplicados confirmados por el dueño.
   Notas: el navegador integrado no pasa la verificación anti-bots de los registros; el entorno de Claude
   no llega a las APIs de Neon/Cloudflare; Claude no escribe contraseñas en formularios (las pega el dueño).
-- [ ] Fase 2 — Estadísticas en la app
+- [x] Fase 2 — Estadísticas en la app (`/estadisticas`, API `/api/estadisticas?desde=AAAA&hasta=AAAA`).
+  Consultas en `src/db/estadisticas.ts` (driver-agnóstico, probado con PGlite), cálculos puros en
+  `src/shared/estadisticas.ts`, gráficas SVG propias en `src/client/components/graficas.tsx`
+  (una serie, azul #2a78d6, tooltip, "Ver como tabla"). Categoría = sección del presupuesto.
+  Pendiente para fase 3: unir productos duplicados del catálogo (p. ej. variantes de "sistema eléctrico").
 - [ ] Fase 3 — CRUD clientes / buses / productos
 - [ ] Fase 4 — Editor de presupuestos + PDF
 - [ ] Fase 5 — Respaldo en Google Sheets con el formato de siempre

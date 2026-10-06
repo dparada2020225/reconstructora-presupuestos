@@ -14,5 +14,6 @@
     "noUnusedParameters": true,
     "types": ["@cloudflare/workers-types"]
   },
-  "include": ["src/worker", "src/db", "src/shared"]
+  "include": ["src/worker", "src/db", "src/shared"],
+  "exclude": ["src/**/*.test.ts"]
 }

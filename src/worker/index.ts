@@ -5,6 +5,7 @@ import { ZodError } from "zod";
 import { crearDb } from "./db";
 import type { AppEnv } from "./env";
 import { requiereUsuario } from "./middleware/auth";
+import { rutasEstadisticas } from "./routes/estadisticas";
 import { rutasUsuarios } from "./routes/usuarios";
 
 const app = new Hono<AppEnv>().basePath("/api");
@@ -28,6 +29,7 @@ app.use("*", requiereUsuario);
 
 app.get("/me", (c) => c.json(c.var.usuario));
 app.route("/usuarios", rutasUsuarios);
+app.route("/estadisticas", rutasEstadisticas);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);

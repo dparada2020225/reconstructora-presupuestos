@@ -22,7 +22,7 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 - Correcciones manuales vía `overrides.json` y volver a correr.
 - **Pendiente:** revisar `revision.md` con quien conoce los trabajos, ajustar overrides, cargar a Neon.
 
-## Fase 2 — Estadísticas
+## Fase 2 — Estadísticas ✅
 - Totales: clientes, buses, trabajos, presupuestos, monto cotizado y cerrado.
 - Por cliente: trabajos, buses, monto, frecuencia, tiempo entre visitas.
 - Por bus: cuántas veces vino y qué se le hizo.
