@@ -7,8 +7,11 @@ import type { AppEnv, Env } from "./env";
 import { requiereUsuario } from "./middleware/auth";
 import { rutasBuses } from "./routes/buses";
 import { rutasClientes } from "./routes/clientes";
+import { rutasConfiguracion } from "./routes/configuracion";
 import { rutasEstadisticas } from "./routes/estadisticas";
+import { rutasPresupuestos } from "./routes/presupuestos";
 import { rutasProductos } from "./routes/productos";
+import { rutasTrabajos } from "./routes/trabajos";
 import { rutasUsuarios } from "./routes/usuarios";
 
 /** Código de Postgres para "ya existe" (índice único). Drizzle a veces lo envuelve en `cause`. */
@@ -44,6 +47,9 @@ export function crearApp(obtenerDb: (env: Env) => Db) {
   app.route("/clientes", rutasClientes);
   app.route("/buses", rutasBuses);
   app.route("/productos", rutasProductos);
+  app.route("/presupuestos", rutasPresupuestos);
+  app.route("/trabajos", rutasTrabajos);
+  app.route("/configuracion", rutasConfiguracion);
 
   app.onError((err, c) => {
     if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);

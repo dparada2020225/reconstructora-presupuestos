@@ -148,6 +148,19 @@ export const duplicadosDescartados = pgTable(
   (t) => [primaryKey({ columns: [t.tipo, t.aId, t.bId] })],
 );
 
+/**
+ * Ajustes de la app (clave → valor): membrete del PDF (empresa, correo, teléfono, firma,
+ * nota, lugar, logo como data URL). Viven en la base y no en el código porque el repo es público.
+ */
+export const configuracion = pgTable("configuracion", {
+  clave: text("clave").primaryKey(),
+  valor: text("valor").notNull(),
+  actualizadoEn: timestamp("actualizado_en", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
 /* ───────────────────────── Trabajos y presupuestos ───────────────────────── */
 
 /** Un trabajo agrupa el presupuesto original y todos sus extras. */

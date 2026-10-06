@@ -84,7 +84,7 @@ export async function trabajosDonde(db: Db, donde: SQL | undefined) {
     })
     .from(s.presupuestos)
     .where(inArray(s.presupuestos.trabajoId, trabajos.map((t) => t.id)))
-    .orderBy(asc(s.presupuestos.fecha), asc(s.presupuestos.numero), asc(s.presupuestos.id));
+    .orderBy(asc(s.presupuestos.numero), asc(s.presupuestos.fecha), asc(s.presupuestos.id));
 
   return trabajos
     .map((t) => {

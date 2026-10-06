@@ -140,7 +140,20 @@ Ver `docs/PLAN.md`. Actual:
   panel de **posibles repetidos** (clientes y productos; se calcula en el navegador con
   `posiblesDuplicados` de `shared/claves.ts`; "No son el mismo" se guarda en `duplicados_descartados`).
   Producto: historial de precios (usos + mediana por año), precio de referencia, desactivar.
-- [ ] Fase 4 — Editor de presupuestos + PDF
+- [ ] Fase 4 — Editor de presupuestos + PDF (EN PROGRESO, ver pasos):
+  - [x] 4.1 API: `/api/presupuestos` (GET lista, GET :id con items/trabajo/hermanos, POST = trabajo nuevo
+    con `clienteId` o EXTRA con `trabajoId`, PUT :id reemplaza encabezado + líneas, PATCH :id/estado,
+    DELETE :id solo borradores), `/api/trabajos/:id` (GET, PATCH estado/título/notas) y
+    `/api/configuracion` (membrete del PDF; GET todos, PUT admin). Forma del cuerpo en
+    `src/shared/presupuesto.ts` (`PresupuestoEntrada`, `LineaEntrada` con `detalles` = sub-items sin precio).
+    Ids reservados con `reservarIds` → todo se guarda en un solo `enLote`. Líneas sin producto se enlazan
+    al catálogo por alias. Migración 0002 (`configuracion`).
+  - [ ] 4.2 Pantallas: /presupuestos (lista), /trabajos/:id, /presupuestos/nuevo (?trabajo=ID extra,
+    ?base=ID copiar), /presupuestos/:id (editor), /ajustes (membrete, admin).
+  - [ ] 4.3 PDF en el navegador (pdf-lib, carga diferida) con el formato del Excel: logo, lugar y fecha,
+    cliente, placa/transporte, a la derecha correo/empresa/tel; secciones centradas en negrita, líneas
+    "- descripción……… Q4,500.00", TOTAL por sección con fondo verde #8CDA1F, resumen si hay varias
+    secciones, NOTA centrada y firma en negrita. Datos del membrete salen de `configuracion`.
 - [ ] Fase 5 — Respaldo en Google Sheets con el formato de siempre
 - [ ] Fase 6 — Pulido
 
