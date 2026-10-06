@@ -7,11 +7,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../../src/db/schema";
+import { urlParaScripts } from "../db-url";
 import { cargarHistorico } from "./cargar";
 import { HISTORICO_JSON } from "./rutas";
 import type { Historico } from "./tipos";
 
-const url = process.env.DATABASE_URL;
+const url = urlParaScripts(process.env.DATABASE_URL);
 if (!url) {
   console.error("Falta DATABASE_URL en .env");
   process.exit(1);

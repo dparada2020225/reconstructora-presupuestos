@@ -9,11 +9,12 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../src/db/schema";
+import { urlParaScripts } from "./db-url";
 
 const ROLES = ["admin", "usuario"] as const;
 type Rol = (typeof ROLES)[number];
 
-const url = process.env.DATABASE_URL;
+const url = urlParaScripts(process.env.DATABASE_URL);
 const crudo = process.env.SEED_USUARIOS ?? "";
 if (!url || !crudo) {
   console.error("Faltan DATABASE_URL o SEED_USUARIOS en .env");
