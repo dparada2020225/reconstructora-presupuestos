@@ -8,7 +8,14 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "observability": { "enabled": true }
-  // Secretos (wrangler secret put …): DATABASE_URL, ACCESS_TEAM_DOMAIN, ACCESS_AUD,
+  "observability": { "enabled": true },
+  // Cloudflare Access (Worker → Access). No son secretos: el dominio del equipo y el
+  // AUD solo sirven para verificar la firma del login; las llaves públicas están en
+  // https://<equipo>.cloudflareaccess.com/cdn-cgi/access/certs
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "cold-math-81b4.cloudflareaccess.com",
+    "ACCESS_AUD": "3ac0fd2e942f9d89407e54652a28f2e46308d0615e7f265bb5844a8f97551759"
+  }
+  // Secretos (wrangler secret put … o npm run configurar:produccion): DATABASE_URL,
   // GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_PRIVATE_KEY, SHEETS_RESPALDO_ID
 }

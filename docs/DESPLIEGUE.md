@@ -28,14 +28,14 @@ y en los secretos del Worker; nunca en el repo.
 
 ## 3. Cloudflare Access (login)
 
-1. **Zero Trust** (plan Free, hasta 50 usuarios) → elegir un nombre de equipo
-   (queda `<equipo>.cloudflareaccess.com` → `ACCESS_TEAM_DOMAIN`).
-2. **Access → Applications → Add → Self-hosted**: dominio del Worker
-   (`reconstructora-presupuestos.<cuenta>.workers.dev`).
-3. Política **Allow** con *Include → Everyone*: Access solo identifica el correo;
-   quién entra de verdad lo decide la app (tabla `usuarios`).
-4. Método de login: "One-time PIN" (código al correo) y, si se quiere, Google.
-5. Copiar el **Application Audience (AUD) Tag** → secreto `ACCESS_AUD`.
+1. **Zero Trust** (plan Free, hasta 50 usuarios). El equipo queda como
+   `<equipo>.cloudflareaccess.com` → `ACCESS_TEAM_DOMAIN`.
+2. **Zero Trust → Access controls → Policies → Add a policy**: Allow, *Include → Everyone*,
+   sesión 1 mes. Access solo identifica el correo; quién entra lo decide la app (tabla `usuarios`).
+3. **Workers → reconstructora-presupuestos → Access → Protect this Worker**: scope *All traffic*
+   y la política del paso 2.
+4. Login: "One-time PIN" (código al correo) viene activo; Google es opcional.
+5. Copiar **AUD tag** y dominio del equipo a `vars` en `wrangler.jsonc` (no son secretos).
 6. Sembrar solo al admin (`npm run db:seed-usuarios`). Los demás entran, quedan
    pendientes y el admin los autoriza en la página **Usuarios**.
 

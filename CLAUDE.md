@@ -28,7 +28,9 @@ Todo el histórico entra como `terminado` y sus presupuestos como `listo`.
    `overrides.json`. Este archivo tampoco lleva ese tipo de datos. Si hace falta
    anotar algo sensible, va en `CLAUDE.local.md` (ignorado por git).
 2. **Secretos** solo en `.env` / `.dev.vars` (locales, ignorados) y en secretos de
-   Cloudflare (`wrangler secret put`). Nunca en `wrangler.jsonc` ni en el código.
+   Cloudflare (`wrangler secret put`). Nunca en `wrangler.jsonc` ni en el código. (En `vars` de
+   `wrangler.jsonc` solo van valores públicos; ojo: `wrangler deploy` borra las variables de texto
+   creadas en el dashboard, por eso viven en el archivo. Los secretos sí se conservan.)
 3. `npm run check:privacidad` debe pasar antes de cada commit (también corre en CI).
 4. **Commits sin coautoría**: nada de `Co-Authored-By` ni `Claude-Session`. Autor:
    el dueño del repo. Solo se commitea cuando el paso funciona (typecheck + tests + build).
@@ -112,7 +114,11 @@ Ver `docs/PLAN.md`. Actual:
 - [x] Fase 1 — Esquema + ETL (parse, reporte, carga probada con PGlite)
 - [x] Neon: proyecto con ramas `production` (app publicada) y `dev` (local, sin auto-borrado). `dev` ya migrada.
 - [x] Cloudflare Workers Builds conectado al repo: push a `main` → deploy en `*.workers.dev`.
-- [ ] Producción: secreto `DATABASE_URL` + migración (`npm run configurar:produccion`), Zero Trust Free + Access, Google Cloud.
+- [x] Producción: secreto `DATABASE_URL`, tablas migradas, admin sembrado (`npm run configurar:produccion`).
+- [x] Zero Trust Free (equipo `cold-math-81b4`). Access aplicado al Worker (todo el tráfico) con la política
+  reusable "Cualquier correo verificado (la app autoriza)" = Everyone, sesión de 1 mes. Login por PIN al correo.
+  `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD` van en `wrangler.jsonc` → `vars` (no son secretos).
+- [ ] Cargar histórico revisado a producción; Google Cloud (fase 5).
   Notas: el navegador integrado no pasa la verificación anti-bots de los registros; el entorno de Claude
   no llega a las APIs de Neon/Cloudflare; Claude no escribe contraseñas en formularios (las pega el dueño).
 - [ ] Fase 2 — Estadísticas en la app

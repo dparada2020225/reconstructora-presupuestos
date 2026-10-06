@@ -4,9 +4,9 @@ DATABASE_URL="postgresql://usuario:password@ep-xxxx.us-east-2.aws.neon.tech/neon
 # Solo en local: simula el usuario logueado (en producción lo da Cloudflare Access).
 DEV_AUTH_EMAIL="tu-correo@gmail.com"
 
-# Producción (se cargan con `wrangler secret put`, aquí quedan vacíos):
-# ACCESS_TEAM_DOMAIN="tu-equipo.cloudflareaccess.com"
-# ACCESS_AUD="tag-de-la-aplicacion-de-access"
+# Producción (secretos con `wrangler secret put`; aquí quedan vacíos).
+# ACCESS_TEAM_DOMAIN y ACCESS_AUD están en wrangler.jsonc (no son secretos) y en local
+# no se usan mientras exista DEV_AUTH_EMAIL.
 # GOOGLE_SERVICE_ACCOUNT_EMAIL=""
 # GOOGLE_PRIVATE_KEY=""
 # SHEETS_RESPALDO_ID=""
