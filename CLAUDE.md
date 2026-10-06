@@ -80,7 +80,8 @@ npm run db:generate       # nueva migración desde src/db/schema.ts
 npm run db:migrate        # aplicar migraciones a DATABASE_URL (.env)
 npm run db:seed-usuarios  # usuarios desde SEED_USUARIOS (.env)
 npm run etl:parse         # Excel → ../_etl/{historico.json,revision.md,estadisticas.md}
-npm run etl:load          # historico.json → base (idempotente)
+npm run etl:load          # historico.json → base de .env (idempotente)
+npm run etl:load:produccion  # igual, pero pide la URL de la rama production
 npm run configurar:produccion  # pide la URL de production: migra, siembra y la guarda como secreto del Worker
 ```
 
@@ -118,7 +119,8 @@ Ver `docs/PLAN.md`. Actual:
 - [x] Zero Trust Free (equipo `cold-math-81b4`). Access aplicado al Worker (todo el tráfico) con la política
   reusable "Cualquier correo verificado (la app autoriza)" = Everyone, sesión de 1 mes. Login por PIN al correo.
   `ACCESS_TEAM_DOMAIN`/`ACCESS_AUD` van en `wrangler.jsonc` → `vars` (no son secretos).
-- [ ] Cargar histórico revisado a producción; Google Cloud (fase 5).
+- [ ] Cargar histórico revisado a producción (`etl:load:produccion`); Google Cloud (fase 5).
+  `overrides.json` (fuera del repo) ya une 3 pares de clientes duplicados confirmados por el dueño.
   Notas: el navegador integrado no pasa la verificación anti-bots de los registros; el entorno de Claude
   no llega a las APIs de Neon/Cloudflare; Claude no escribe contraseñas en formularios (las pega el dueño).
 - [ ] Fase 2 — Estadísticas en la app

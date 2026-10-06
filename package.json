@@ -18,7 +18,8 @@
     "etl:parse": "tsx scripts/etl/run.ts",
     "etl:load": "tsx scripts/etl/load.ts",
     "cf-typegen": "wrangler types",
-    "configurar:produccion": "tsx scripts/configurar-produccion.ts"
+    "configurar:produccion": "tsx scripts/configurar-produccion.ts",
+    "etl:load:produccion": "tsx scripts/etl/load.ts --produccion"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
