@@ -8,7 +8,7 @@
  */
 import "dotenv/config";
 import { spawnSync } from "node:child_process";
-import { createInterface } from "node:readline/promises";
+import { pedirUrlProduccion } from "./url-produccion";
 
 const correr = (cmd: string, env?: NodeJS.ProcessEnv, input?: string) =>
   spawnSync(cmd, {
@@ -18,28 +18,7 @@ const correr = (cmd: string, env?: NodeJS.ProcessEnv, input?: string) =>
     env: env ?? process.env,
   });
 
-function host(url: string | undefined) {
-  try {
-    return url ? new URL(url).hostname : null;
-  } catch {
-    return null;
-  }
-}
-
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-console.log("\nPega la URL de conexión de la rama *production* de Neon");
-console.log("(Neon → Connect → rama production → Connection pooling apagado → Copy snippet)\n");
-const url = (await rl.question("URL: ")).trim().replace(/^["']|["']$/g, "");
-rl.close();
-
-if (!/^postgres(ql)?:\/\/.+@.+\/.+/.test(url)) {
-  console.error("✗ Eso no parece una URL de Postgres. No se cambió nada.");
-  process.exit(1);
-}
-if (host(url) === host(process.env.DATABASE_URL)) {
-  console.error("✗ Esa es la misma base que tienes en .env (la de desarrollo). Copia la de la rama production.");
-  process.exit(1);
-}
+const url = await pedirUrlProduccion();
 
 const envProd = { ...process.env, DATABASE_URL: url };
 

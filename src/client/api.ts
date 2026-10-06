@@ -18,7 +18,117 @@ export async function api<T>(ruta: string, init?: RequestInit): Promise<T> {
   return cuerpo as T;
 }
 
+/** POST/PATCH/DELETE con cuerpo JSON. */
+export const enviar = <T = { ok: true }>(metodo: "POST" | "PATCH" | "DELETE", ruta: string, cuerpo?: unknown) =>
+  api<T>(ruta, { method: metodo, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
+
 export type Rol = "admin" | "usuario";
 export type EstadoUsuario = "pendiente" | "activo" | "denegado";
 export type Usuario = { id: number; email: string; nombre: string; rol: Rol };
 export type UsuarioAdmin = Usuario & { estado: EstadoUsuario; creadoEn: string };
+
+export type EstadoTrabajo = "cotizado" | "en_curso" | "terminado" | "no_concretado";
+
+export interface TrabajoResumen {
+  id: number;
+  titulo: string | null;
+  estado: EstadoTrabajo;
+  fecha: string | null;
+  clienteId: number;
+  cliente: string;
+  busId: number | null;
+  bus: string | null;
+  placa: string | null;
+  cotizado: number;
+  monto: number;
+  presupuestos: {
+    id: number;
+    tipo: "original" | "extra";
+    numero: number;
+    titulo: string | null;
+    fecha: string | null;
+    estado: "borrador" | "listo";
+    total: number;
+    cerradoEn: number | null;
+  }[];
+}
+
+export interface ClienteFila {
+  id: number;
+  nombre: string;
+  telefono: string | null;
+  notas: string | null;
+  buses: number;
+  trabajos: number;
+  ultima: string | null;
+  alias: string[];
+}
+
+export interface ClienteDetalle {
+  id: number;
+  nombre: string;
+  telefono: string | null;
+  notas: string | null;
+  origen: "app" | "historico";
+  alias: string[];
+  buses: { id: number; nombre: string | null; placa: string | null; descripcion: string | null; trabajos: number }[];
+  trabajos: TrabajoResumen[];
+}
+
+export interface BusFila {
+  id: number;
+  nombre: string | null;
+  placa: string | null;
+  descripcion: string | null;
+  notas: string | null;
+  clienteId: number | null;
+  cliente: string | null;
+  trabajos: number;
+  ultima: string | null;
+}
+
+export interface BusDetalle extends Omit<BusFila, "trabajos" | "ultima"> {
+  origen: "app" | "historico";
+  trabajos: TrabajoResumen[];
+}
+
+export interface ProductoFila {
+  id: number;
+  nombre: string;
+  categoria: string | null;
+  precioReferencia: number | null;
+  unidad: string | null;
+  activo: boolean;
+  veces: number;
+  ultimaFecha: string | null;
+  ultimoPrecio: number | null;
+  alias: string[];
+}
+
+export interface ProductoDetalle {
+  id: number;
+  nombre: string;
+  categoria: string | null;
+  precioReferencia: number | null;
+  unidad: string | null;
+  activo: boolean;
+  notas: string | null;
+  alias: string[];
+  veces: number;
+  usos: {
+    id: number;
+    presupuestoId: number;
+    trabajoId: number;
+    tipo: "original" | "extra";
+    fecha: string | null;
+    clienteId: number;
+    cliente: string;
+    descripcion: string;
+    cantidad: number;
+    unitario: number | null;
+    precio: number | null;
+  }[];
+  porAnio: { anio: string; mediana: number; n: number }[];
+}
+
+export type Descartado = { aId: number; bId: number };

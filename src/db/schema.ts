@@ -7,6 +7,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -131,6 +132,21 @@ export const productoAlias = pgTable("producto_alias", {
     .references(() => productos.id, { onDelete: "cascade" }),
   alias: text("alias").notNull().unique(),
 });
+
+/**
+ * Pares que la app sugirió como posibles duplicados y alguien marcó "no son el mismo".
+ * aId < bId siempre. Sin llave foránea (sirve para clientes y productos); se limpian al unir o borrar.
+ */
+export const duplicadosDescartados = pgTable(
+  "duplicados_descartados",
+  {
+    tipo: text("tipo").notNull(), // "clientes" | "productos"
+    aId: integer("a_id").notNull(),
+    bId: integer("b_id").notNull(),
+    creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.tipo, t.aId, t.bId] })],
+);
 
 /* ───────────────────────── Trabajos y presupuestos ───────────────────────── */
 

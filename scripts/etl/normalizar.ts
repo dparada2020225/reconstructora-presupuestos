@@ -1,4 +1,7 @@
-import { normalizar, similitud, titulo } from "../../src/shared/texto";
+import { claveCliente, claveNombreBus, claveProducto, limpiarNombreCliente, RE_PLACA } from "../../src/shared/claves";
+import { similitud, titulo } from "../../src/shared/texto";
+
+export { claveCliente, claveNombreBus, claveProducto, limpiarNombreCliente };
 
 /* ───────────────────────── Clientes ───────────────────────── */
 
@@ -9,25 +12,6 @@ export function separarClienteTransporte(texto: string): { cliente: string; tran
     return { cliente: partes[0].trim(), transporte: partes.slice(1).join(" - ").trim() };
   }
   return { cliente: texto.trim(), transporte: null };
-}
-
-/** Limpia el nombre tal como se va a mostrar. */
-export function limpiarNombreCliente(texto: string): string {
-  return texto
-    .replace(/\([^)]*\)/g, " ") // "(Capitàn)", "(Hijo de …)"
-    .replace(/^\s*(otras\s+)?extras?\s+/i, "") // "Extras Pedro Estrella 1"
-    .replace(/\s+\d+\s*$/, "") // "Pedro Estrella 2"
-    .replace(/[.,]+\s*$/, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Clave para comparar clientes: sin tildes, sin "Transporte(s)/Trans" al inicio. */
-export function claveCliente(texto: string): string {
-  return normalizar(limpiarNombreCliente(texto))
-    .replace(/^(transportes?|trans)\s+/, "transportes ")
-    .replace(/\bsociedad anonima\b|\bs a\b/g, "")
-    .trim();
 }
 
 export interface SugerenciaFusion {
@@ -54,8 +38,6 @@ export function sugerirFusiones(claves: string[]): SugerenciaFusion[] {
 }
 
 /* ───────────────────────── Buses ───────────────────────── */
-
-const RE_PLACA = /\b([A-Z]{1,2})?\s*-?\s*(\d{3})\s*([A-Z]{2}[A-Z0-9])\b/i;
 
 /** Descripciones que dicen qué tipo de vehículo es, no cuál bus es. */
 const SOLO_DESCRIPCION = /carrocer|\bford\b|\bkia\b|blue ?bird|international|^usa$|restaurante|porta ?contenedor/i;
@@ -93,41 +75,7 @@ export function detectarBus(texto: string | null): BusDetectado | null {
   return { placa, nombre: nombre ? titulo(nombre) : null, descripcion };
 }
 
-/** "Transporte Lupita" ≡ "Lupita"; "La Estrella" ≡ "Estrella". */
-export function claveNombreBus(nombre: string): string {
-  return normalizar(nombre)
-    .replace(/^(transportes?|trans)\s+/, "")
-    .replace(/^(el|la|los|las)\s+/, "")
-    .trim();
-}
-
 /* ───────────────────────── Productos ───────────────────────── */
-
-const STOP = new Set(["de", "del", "la", "el", "los", "las", "con", "en", "para", "y", "a", "al", "un", "una", "todo", "todos"]);
-
-const SINONIMOS: [RegExp, string][] = [
-  [/\bpor fuera\b|\bfuera\b/g, "afuera"],
-  [/\bpor dentro\b|\bdentro\b/g, "adentro"],
-  [/\bvicera\b|\bviceras\b/g, "visera"],
-  [/\bpasa manos\b/g, "pasamanos"],
-  [/\bbumper\b/g, "bomper"],
-  [/\bwishil\b|\bwindshield\b/g, "parabrisas"],
-  [/\bperciana\b/g, "persiana"],
-  [/\bestrivo\b/g, "estribo"],
-  [/\bazadores\b|\bazadones\b|\basadores\b/g, "asadores"],
-  [/\bneulay\b|\bneolay\b/g, "neolay"],
-  [/\belectrico\b/g, "electrico"],
-];
-
-/** Clave del producto: sin cantidades, sin palabras vacías, con sinónimos comunes. */
-export function claveProducto(descripcion: string): string {
-  let t = normalizar(descripcion).replace(/^\d+\s+/, "");
-  for (const [re, rep] of SINONIMOS) t = t.replace(re, rep);
-  return t
-    .split(" ")
-    .filter((w) => w && !STOP.has(w))
-    .join(" ");
-}
 
 /**
  * Agrupa claves parecidas (≥0.88) en un mismo producto. Devuelve clave → representante.

@@ -19,3 +19,6 @@ export function categoriaDeSeccion(seccion: string | null): string | null {
   for (const [re, cat] of reglas) if (re.test(s)) return cat;
   return null;
 }
+
+/** Categorías de siempre (las secciones del presupuesto). Los productos pueden tener otras. */
+export const CATEGORIAS = ["ADENTRO", "AFUERA", "TROMPA", "AUDIO", "LUCES", "ELÉCTRICO", "ACCESORIOS", "MECÁNICA", "SILLAS", "CROMOS"];

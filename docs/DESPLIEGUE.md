@@ -57,3 +57,22 @@ cp .dev.vars.example .dev.vars  # y llenar
 npm run db:migrate
 npm run dev
 ```
+
+## Cambios que agregan tablas o columnas
+
+Cuando un commit trae una migración nueva en `drizzle/`:
+
+```bash
+npm run db:migrate              # rama dev (la de .env)
+npm run db:migrate:produccion   # pide la URL de production y la migra
+git push                        # recién entonces: Workers Builds publica el código nuevo
+```
+
+Si se hace push antes de migrar producción, las partes nuevas fallan hasta que se migre.
+
+## Ojo con `etl:load` en producción
+
+`etl:load` borra y vuelve a crear todo lo que vino del histórico (trabajos, presupuestos y
+buses sin uso). Clientes y productos se reconocen por alias, así que las uniones hechas en la
+app se respetan, pero cambios a trabajos o buses del histórico se perderían. Una vez que se
+empieza a editar en la app, **no volver a correr `etl:load:produccion`**.

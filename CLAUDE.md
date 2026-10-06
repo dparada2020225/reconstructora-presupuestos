@@ -56,10 +56,12 @@ Sin Docker: Workers no corre contenedores y en local basta `vite` + rama `dev` d
 ```
 src/
   client/      React (páginas en client/pages, componentes en client/components)
-  worker/      Hono: index.ts (rutas), middleware/auth.ts, db.ts, env.ts
+  worker/      Hono: app.ts (crearApp: rutas y errores; recibe la base → se prueba con PGlite en api.test.ts),
+               index.ts (entrada del Worker), routes/*.ts, middleware/auth.ts, db.ts, env.ts
   db/schema.ts Esquema Drizzle (fuente de verdad de la base)
   db/estadisticas.ts  Consultas de la página Estadísticas
-  shared/      Utilidades usadas por app y scripts (dinero, fechas, texto, categorías, estadísticas) + tests
+  db/tipos.ts  Tipo `Db` común a los drivers + `enLote` (batch atómico en neon-http; en orden en tests)
+  shared/      Utilidades usadas por app y scripts (dinero, fechas, texto, claves, categorías, estadísticas) + tests
 scripts/
   etl/         Migración de los Excel históricos (ver abajo)
   seed-usuarios.ts, check-privacidad.mjs
@@ -79,6 +81,7 @@ npm run build             # build de producción (dist/)
 npm run check:privacidad  # nada sensible trackeado
 npm run db:generate       # nueva migración desde src/db/schema.ts
 npm run db:migrate        # aplicar migraciones a DATABASE_URL (.env)
+npm run db:migrate:produccion  # pide la URL de production y la migra (ANTES del push que trae la migración)
 npm run db:seed-usuarios  # usuarios desde SEED_USUARIOS (.env)
 npm run etl:parse         # Excel → ../_etl/{historico.json,revision.md,estadisticas.md}
 npm run etl:load          # historico.json → base de .env (idempotente)
@@ -130,13 +133,24 @@ Ver `docs/PLAN.md`. Actual:
   Consultas en `src/db/estadisticas.ts` (driver-agnóstico, probado con PGlite), cálculos puros en
   `src/shared/estadisticas.ts`, gráficas SVG propias en `src/client/components/graficas.tsx`
   (una serie, azul #2a78d6, tooltip, "Ver como tabla"). Categoría = sección del presupuesto.
-  Pendiente para fase 3: unir productos duplicados del catálogo (p. ej. variantes de "sistema eléctrico").
-- [ ] Fase 3 — CRUD clientes / buses / productos
+  Los productos repetidos del catálogo se unen desde la página Productos (fase 3).
+- [x] Fase 3 — Clientes, buses y productos: listas con búsqueda (sin tildes, en el navegador), detalle
+  editable, crear, borrar (bloqueado si tiene trabajos/usos → se une o se desactiva), **unir** repetidos
+  (`POST /api/{clientes|buses|productos}/:id/unir {otroId}`: el otro se une dentro de :id y se borra) y
+  panel de **posibles repetidos** (clientes y productos; se calcula en el navegador con
+  `posiblesDuplicados` de `shared/claves.ts`; "No son el mismo" se guarda en `duplicados_descartados`).
+  Producto: historial de precios (usos + mediana por año), precio de referencia, desactivar.
 - [ ] Fase 4 — Editor de presupuestos + PDF
 - [ ] Fase 5 — Respaldo en Google Sheets con el formato de siempre
 - [ ] Fase 6 — Pulido
 
 ## Decisiones (más reciente arriba)
+
+- 2026-10-06 — Fase 3. Varias escrituras juntas van con `enLote` (neon-http no tiene transacciones
+  interactivas; `batch` sí es todo o nada). Workers gratis tiene ~10 ms de CPU por petición: cálculos
+  pesados (posibles repetidos, ~400 productos) se hacen en el navegador, no en el Worker. Un producto
+  usado no se borra (perdería el historial): se desactiva o se une. `etl:load` reconoce productos por
+  alias para respetar uniones hechas en la app; aun así, no volver a correrlo en producción.
 
 - 2026-10-06 — Roles simplificados: `admin` (autoriza/niega acceso) y `usuario` (todo lo demás,
   todos iguales). Sin rol revisor: el jefe revisa el PDF fuera de la app. Estados del

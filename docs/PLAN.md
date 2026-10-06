@@ -33,7 +33,7 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 - Temporada: presupuestos por mes.
 - Filtros por rango de fechas, cliente y categoría.
 
-## Fase 3 — CRUD
+## Fase 3 — CRUD ✅
 - Clientes (con alias y teléfono), buses (placa opcional, nombre, cliente), catálogo
   de productos (categoría, precio de referencia, historial de precios usados).
 - Búsqueda rápida; fusionar clientes/productos duplicados desde la UI.

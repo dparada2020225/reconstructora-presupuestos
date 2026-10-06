@@ -85,7 +85,21 @@ export async function cargarHistorico(db: Db, h: Historico, progreso: Progreso =
           preciosPorProducto.set(it.producto, arr);
         }
     const idProducto = new Map<string, number>();
-    for (const grupo of bloques(h.productos, 1000)) {
+    // Los que ya existen (por alias) se respetan tal cual: pudieron unirse o editarse en la app.
+    const idPorAliasProd = new Map<string, number>();
+    for (const grupo of bloques([...new Set(h.productos.flatMap((p) => p.alias))], 5000)) {
+      const filas = await tx
+        .select({ alias: s.productoAlias.alias, id: s.productoAlias.productoId })
+        .from(s.productoAlias)
+        .where(inArray(s.productoAlias.alias, grupo));
+      for (const f of filas) idPorAliasProd.set(f.alias, f.id);
+    }
+    const productosNuevos = h.productos.filter((p) => {
+      const id = p.alias.map((a) => idPorAliasProd.get(a)).find((x) => x !== undefined);
+      if (id) idProducto.set(p.nombre, id);
+      return !id;
+    });
+    for (const grupo of bloques(productosNuevos, 1000)) {
       const filas = await tx
         .insert(s.productos)
         .values(

@@ -13,6 +13,7 @@
     "check:privacidad": "node scripts/check-privacidad.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:produccion": "tsx scripts/migrar-produccion.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed-usuarios": "tsx scripts/seed-usuarios.ts",
     "etl:parse": "tsx scripts/etl/run.ts",

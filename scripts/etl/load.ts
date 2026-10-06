@@ -5,35 +5,17 @@
  *        npm run etl:load:produccion   → pide la URL de la rama production
  */
 import { existsSync, readFileSync } from "node:fs";
-import { createInterface } from "node:readline/promises";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../../src/db/schema";
 import { urlParaScripts } from "../db-url";
+import { pedirUrlProduccion } from "../url-produccion";
 import { cargarHistorico } from "./cargar";
 import { HISTORICO_JSON } from "./rutas";
 import type { Historico } from "./tipos";
 
-const hostDe = (u: string) => {
-  try {
-    return new URL(u).hostname;
-  } catch {
-    return null;
-  }
-};
-
 let crudo = process.env.DATABASE_URL ?? "";
-if (process.argv.includes("--produccion")) {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  console.log("\nPega la URL de la rama *production* de Neon (Connect → production → pooling apagado → Copy snippet)");
-  const prod = (await rl.question("URL: ")).trim().replace(/^["']|["']$/g, "");
-  rl.close();
-  if (!/^postgres(ql)?:\/\/.+@.+\/.+/.test(prod) || hostDe(prod) === hostDe(crudo)) {
-    console.error("✗ Esa no es la URL de production (o es la misma de .env). No se cargó nada.");
-    process.exit(1);
-  }
-  crudo = prod;
-}
+if (process.argv.includes("--produccion")) crudo = await pedirUrlProduccion();
 const url = urlParaScripts(crudo);
 if (!url) {
   console.error("Falta DATABASE_URL en .env");
