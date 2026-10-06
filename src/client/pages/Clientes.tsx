@@ -96,14 +96,26 @@ export function Clientes() {
   );
 }
 
-function NuevoCliente({ abierto, onCerrar, nombreInicial }: { abierto: boolean; onCerrar: () => void; nombreInicial: string }) {
+export function NuevoCliente({
+  abierto,
+  onCerrar,
+  nombreInicial,
+  onCreado,
+}: {
+  abierto: boolean;
+  onCerrar: () => void;
+  nombreInicial: string;
+  /** Si viene, no se navega al cliente: se avisa el id (p. ej. para escogerlo en el editor). */
+  onCreado?: (id: number) => void;
+}) {
   const qc = useQueryClient();
   const navegar = useNavigate();
   const crear = useMutation({
     mutationFn: (d: { nombre: string; telefono: string; notas: string }) => enviar<{ id: number }>("POST", "/clientes", d),
     onSuccess: ({ id }) => {
       qc.invalidateQueries({ queryKey: ["clientes"] });
-      navegar(`/clientes/${id}`);
+      if (onCreado) onCreado(id);
+      else navegar(`/clientes/${id}`);
     },
   });
   return (

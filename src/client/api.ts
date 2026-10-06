@@ -19,7 +19,7 @@ export async function api<T>(ruta: string, init?: RequestInit): Promise<T> {
 }
 
 /** POST/PATCH/DELETE con cuerpo JSON. */
-export const enviar = <T = { ok: true }>(metodo: "POST" | "PATCH" | "DELETE", ruta: string, cuerpo?: unknown) =>
+export const enviar = <T = { ok: true }>(metodo: "POST" | "PUT" | "PATCH" | "DELETE", ruta: string, cuerpo?: unknown) =>
   api<T>(ruta, { method: metodo, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
 
 export type Rol = "admin" | "usuario";
@@ -132,3 +132,76 @@ export interface ProductoDetalle {
 }
 
 export type Descartado = { aId: number; bId: number };
+
+export type EstadoPresupuesto = "borrador" | "listo";
+
+export interface PresupuestoFila {
+  id: number;
+  trabajoId: number;
+  tipo: "original" | "extra";
+  numero: number;
+  titulo: string | null;
+  fecha: string | null;
+  estado: EstadoPresupuesto;
+  total: number;
+  cerradoEn: number | null;
+  origen: "app" | "historico";
+  actualizadoEn: string;
+  estadoTrabajo: EstadoTrabajo;
+  clienteId: number;
+  cliente: string;
+  busId: number | null;
+  bus: string | null;
+  placa: string | null;
+}
+
+export interface ItemGuardado {
+  id: number;
+  parentId: number | null;
+  orden: number;
+  seccion: string | null;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number | null;
+  precio: number | null;
+  precioPendiente: boolean;
+  productoId: number | null;
+}
+
+export interface Hermano {
+  id: number;
+  tipo: "original" | "extra";
+  numero: number;
+  fecha: string | null;
+  estado: EstadoPresupuesto;
+  total: number;
+  cerradoEn: number | null;
+  anticipo: number | null;
+}
+
+export interface PresupuestoDetalle {
+  id: number;
+  trabajoId: number;
+  tipo: "original" | "extra";
+  numero: number;
+  titulo: string | null;
+  fecha: string | null;
+  lugar: string | null;
+  estado: EstadoPresupuesto;
+  total: number;
+  cerradoEn: number | null;
+  anticipo: number | null;
+  notas: string | null;
+  notaPie: string | null;
+  origen: "app" | "historico";
+  actualizadoEn: string;
+  items: ItemGuardado[];
+  trabajo: { id: number; estado: EstadoTrabajo; clienteId: number; cliente: string; busId: number | null; bus: string | null; placa: string | null };
+  hermanos: Hermano[];
+}
+
+export interface TrabajoDetalle extends TrabajoResumen {
+  notas: string | null;
+  fechaFin: string | null;
+  origen: "app" | "historico";
+}

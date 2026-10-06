@@ -93,7 +93,19 @@ export function useOpcionesClientes() {
   return useMemo(() => (q.data ?? []).map((c) => ({ id: c.id, etiqueta: c.nombre, buscarEn: c.alias.join(" ") })), [q.data]);
 }
 
-export function NuevoBus({ abierto, onCerrar, clienteId = null, irAlCrear = true }: { abierto: boolean; onCerrar: () => void; clienteId?: number | null; irAlCrear?: boolean }) {
+export function NuevoBus({
+  abierto,
+  onCerrar,
+  clienteId = null,
+  irAlCrear = true,
+  onCreado,
+}: {
+  abierto: boolean;
+  onCerrar: () => void;
+  clienteId?: number | null;
+  irAlCrear?: boolean;
+  onCreado?: (id: number) => void;
+}) {
   const qc = useQueryClient();
   const navegar = useNavigate();
   const opciones = useOpcionesClientes();
@@ -105,6 +117,7 @@ export function NuevoBus({ abierto, onCerrar, clienteId = null, irAlCrear = true
       qc.invalidateQueries({ queryKey: ["clientes"] });
       if (clienteId) qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
       onCerrar();
+      onCreado?.(id);
       if (irAlCrear) navegar(`/buses/${id}`);
     },
   });
@@ -117,7 +130,7 @@ export function NuevoBus({ abierto, onCerrar, clienteId = null, irAlCrear = true
           e.preventDefault();
           const f = new FormData(e.currentTarget);
           crear.mutate({
-            clienteId: cliente,
+            clienteId: clienteId ?? cliente,
             placa: String(f.get("placa")),
             nombre: String(f.get("nombre")),
             descripcion: String(f.get("descripcion")),

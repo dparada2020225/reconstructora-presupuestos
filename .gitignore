@@ -36,3 +36,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Vista previa local con datos reales (nunca se sube)
+.preview.local.ts

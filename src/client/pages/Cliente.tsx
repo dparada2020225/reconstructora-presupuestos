@@ -30,6 +30,11 @@ export function Cliente() {
       <Encabezado
         titulo={c.nombre}
         volver={{ to: "/clientes", texto: "Clientes" }}
+        acciones={
+          <Link to={`/presupuestos/nuevo?cliente=${c.id}`} className="inline-flex items-center rounded-md bg-marca-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-marca-600">
+            + Nuevo presupuesto
+          </Link>
+        }
         detalle={
           c.trabajos.length
             ? `${c.trabajos.length} ${c.trabajos.length === 1 ? "trabajo" : "trabajos"} desde ${fechaCorta(c.trabajos.at(-1)?.fecha)} · Q${Math.round(montoTotal).toLocaleString("en-US")} en total`

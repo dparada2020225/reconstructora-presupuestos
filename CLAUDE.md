@@ -148,8 +148,11 @@ Ver `docs/PLAN.md`. Actual:
     `src/shared/presupuesto.ts` (`PresupuestoEntrada`, `LineaEntrada` con `detalles` = sub-items sin precio).
     Ids reservados con `reservarIds` → todo se guarda en un solo `enLote`. Líneas sin producto se enlazan
     al catálogo por alias. Migración 0002 (`configuracion`).
-  - [ ] 4.2 Pantallas: /presupuestos (lista), /trabajos/:id, /presupuestos/nuevo (?trabajo=ID extra,
-    ?base=ID copiar), /presupuestos/:id (editor), /ajustes (membrete, admin).
+  - [x] 4.2 Pantallas: /presupuestos (lista), /trabajos/:id (estado, notas, + extra), /presupuestos/nuevo
+    (?trabajo=ID extra, ?base=ID copiar líneas, ?cliente=ID), /presupuestos/:id (editor), /ajustes (membrete
+    y logo, admin), Inicio con "Nuevo presupuesto" y borradores. Editor en `src/client/editor/`
+    (`modelo.ts` = estado ↔ API; `Editor.tsx`; `CampoDescripcion.tsx` = autocompletar del catálogo con
+    precio de referencia o último). Enter = línea nueva, Ctrl+S guarda, aviso al salir con cambios.
   - [ ] 4.3 PDF en el navegador (pdf-lib, carga diferida) con el formato del Excel: logo, lugar y fecha,
     cliente, placa/transporte, a la derecha correo/empresa/tel; secciones centradas en negrita, líneas
     "- descripción……… Q4,500.00", TOTAL por sección con fondo verde #8CDA1F, resumen si hay varias

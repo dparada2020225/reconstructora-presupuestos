@@ -31,7 +31,10 @@ export function Layout() {
         </div>
         <nav className="mx-auto max-w-6xl overflow-x-auto px-2">
           <ul className="flex gap-1 text-sm">
-            {[...enlaces, ...(usuario?.rol === "admin" ? [{ to: "/usuarios", label: "Usuarios", end: false }] : [])].map((e) => (
+            {[...enlaces, ...(usuario?.rol === "admin" ? [
+              { to: "/usuarios", label: "Usuarios", end: false },
+              { to: "/ajustes", label: "Ajustes", end: false },
+            ] : [])].map((e) => (
               <li key={e.to}>
                 <NavLink
                   to={e.to}

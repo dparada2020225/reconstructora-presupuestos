@@ -41,7 +41,11 @@ export function TablaTrabajos({ trabajos, mostrar }: { trabajos: TrabajoResumen[
                   <span className="text-slate-400">Sin bus</span>
                 )}
               </td>
-              <td className="px-2 py-2 text-slate-700">{docs(t)}</td>
+              <td className="px-2 py-2">
+                <Link className="text-marca-700 hover:underline" to={`/trabajos/${t.id}`}>
+                  {docs(t)}
+                </Link>
+              </td>
               <td className="px-2 py-2">
                 <Insignia clase={ESTADO_TRABAJO[t.estado].clase}>{ESTADO_TRABAJO[t.estado].texto}</Insignia>
               </td>
