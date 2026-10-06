@@ -38,7 +38,7 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
   de productos (categoría, precio de referencia, historial de precios usados).
 - Búsqueda rápida; fusionar clientes/productos duplicados desde la UI.
 
-## Fase 4 — Editor de presupuestos (lo que usa la editora)
+## Fase 4 — Editor de presupuestos (lo que usa la editora) ✅
 - Nuevo presupuesto: cliente → bus → secciones → items desde el catálogo con el
   último precio sugerido (o texto libre). Sub-items, cantidades, "?" pendiente.
 - Sin límite de filas; totales por sección y total final automáticos.

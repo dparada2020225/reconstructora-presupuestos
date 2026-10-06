@@ -76,3 +76,8 @@ Si se hace push antes de migrar producción, las partes nuevas fallan hasta que 
 buses sin uso). Clientes y productos se reconocen por alias, así que las uniones hechas en la
 app se respetan, pero cambios a trabajos o buses del histórico se perderían. Una vez que se
 empieza a editar en la app, **no volver a correr `etl:load:produccion`**.
+
+## Membrete del PDF (una vez por base)
+
+Entrar como admin → **Ajustes** y llenar empresa, correo, teléfono, firma, lugar por defecto y subir el
+logo. Se guarda en la tabla `configuracion` de esa base (hay que hacerlo en dev y en production).

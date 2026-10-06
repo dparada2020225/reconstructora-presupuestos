@@ -140,7 +140,7 @@ Ver `docs/PLAN.md`. Actual:
   panel de **posibles repetidos** (clientes y productos; se calcula en el navegador con
   `posiblesDuplicados` de `shared/claves.ts`; "No son el mismo" se guarda en `duplicados_descartados`).
   Producto: historial de precios (usos + mediana por año), precio de referencia, desactivar.
-- [ ] Fase 4 — Editor de presupuestos + PDF (EN PROGRESO, ver pasos):
+- [x] Fase 4 — Editor de presupuestos + PDF:
   - [x] 4.1 API: `/api/presupuestos` (GET lista, GET :id con items/trabajo/hermanos, POST = trabajo nuevo
     con `clienteId` o EXTRA con `trabajoId`, PUT :id reemplaza encabezado + líneas, PATCH :id/estado,
     DELETE :id solo borradores), `/api/trabajos/:id` (GET, PATCH estado/título/notas) y
@@ -153,14 +153,23 @@ Ver `docs/PLAN.md`. Actual:
     y logo, admin), Inicio con "Nuevo presupuesto" y borradores. Editor en `src/client/editor/`
     (`modelo.ts` = estado ↔ API; `Editor.tsx`; `CampoDescripcion.tsx` = autocompletar del catálogo con
     precio de referencia o último). Enter = línea nueva, Ctrl+S guarda, aviso al salir con cambios.
-  - [ ] 4.3 PDF en el navegador (pdf-lib, carga diferida) con el formato del Excel: logo, lugar y fecha,
+  - [x] 4.3 PDF en el navegador (`src/shared/pdf-presupuesto.ts`, pdf-lib en chunk aparte; botones
+    "Ver PDF"/"Descargar PDF" en `src/client/pdf/AccionesPdf.tsx`, guardan antes si hay cambios) con el formato del Excel: logo, lugar y fecha,
     cliente, placa/transporte, a la derecha correo/empresa/tel; secciones centradas en negrita, líneas
     "- descripción……… Q4,500.00", TOTAL por sección con fondo verde #8CDA1F, resumen si hay varias
-    secciones, NOTA centrada y firma en negrita. Datos del membrete salen de `configuracion`.
+    secciones (secciones repetidas se suman), "CERRADO EN", anticipo/saldo, en extras "RESUMEN DEL TRABAJO",
+    NOTA centrada y firma en negrita; "c/u" solo si el precio por unidad es exacto; páginas numeradas si
+    son varias. Datos del membrete salen de `configuracion` (página Ajustes; el admin los llena una vez
+    por base, dev y production).
 - [ ] Fase 5 — Respaldo en Google Sheets con el formato de siempre
 - [ ] Fase 6 — Pulido
 
 ## Decisiones (más reciente arriba)
+
+- 2026-10-06 — Fase 4. El PDF se genera en el navegador (no en el Worker: ~10 ms de CPU). El membrete
+  (correo, teléfono, firma, logo) vive en la tabla `configuracion`, no en el repo. Guardar un presupuesto
+  reemplaza todas sus líneas en un solo `enLote` con ids reservados (`reservarIds`). Los documentos de un
+  trabajo se ordenan por `numero` (original 0, extras 1, 2…), no por fecha.
 
 - 2026-10-06 — Fase 3. Varias escrituras juntas van con `enLote` (neon-http no tiene transacciones
   interactivas; `batch` sí es todo o nada). Workers gratis tiene ~10 ms de CPU por petición: cálculos
