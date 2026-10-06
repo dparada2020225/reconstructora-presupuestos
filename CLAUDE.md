@@ -66,6 +66,8 @@ docs/          PLAN.md (fases), DESPLIEGUE.md (cuentas y deploy)
 
 ## Comandos
 
+Requiere **Node 22.12+** (recomendado 24, ver `.nvmrc`; `.npmrc` tiene `engine-strict`). Con Node 20 fallan wrangler/miniflare y `npm run dev`.
+
 ```bash
 npm run dev               # app local (Vite + Worker en workerd) — usa .dev.vars
 npm run typecheck         # tsc -b (app, worker y scripts)
