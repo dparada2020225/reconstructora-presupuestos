@@ -1,7 +1,7 @@
 # Plan por fases
 
 Objetivo: que armar un presupuesto tome minutos en vez de copiar y editar una
-pestaña de Excel, que el jefe lo revise antes de enviarlo, que quede respaldo en
+pestaña de Excel, que salga el PDF listo para pasárselo al jefe, que quede respaldo en
 Google Sheets con el formato de siempre y que haya estadísticas de todo el histórico.
 
 Costo objetivo: **Q0/mes** (dominio propio opcional).
@@ -9,8 +9,10 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 ## Fase 0 — Base ✅
 - Repo, `.gitignore` estricto, `check:privacidad`, CI (privacidad + typecheck + tests + build).
 - React + Vite en el cliente; Hono en un Worker de Cloudflare que también sirve el SPA.
-- Auth: Cloudflare Access + verificación del JWT + tabla `usuarios` con roles.
-- `/api/health` (público) y `/api/me`.
+- Auth: Cloudflare Access + verificación del JWT + tabla `usuarios`.
+- Solicitudes de acceso: quien entra queda pendiente; el admin autoriza o niega en `/usuarios`.
+  Todos los autorizados tienen los mismos permisos.
+- `/api/health` (público), `/api/me`, `/api/usuarios` (admin).
 
 ## Fase 1 — Modelo de datos + migración del histórico ✅ (falta correr contra Neon)
 - Esquema: usuarios, clientes (+alias), buses, productos (+alias), trabajos,
@@ -42,13 +44,14 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 - Sin límite de filas; totales por sección y total final automáticos.
 - Extras: abrir un trabajo y agregar "Extra N" (ve lo anterior y el resumen).
 - Duplicar un presupuesto viejo como base.
-- Flujo: borrador → enviar a revisión → el revisor aprueba o comenta → enviado.
+- Estados: borrador → listo (al generar el PDF). La revisión del jefe y el envío al
+  cliente siguen fuera de la app.
 - Estado del trabajo: cotizado / en curso / terminado / no concretado.
-- **PDF** con el formato de la plantilla (logo, encabezado, nota, firma).
+- **PDF** con el formato de la plantilla (logo, encabezado, nota, firma), listo para pasar por WhatsApp/correo.
 
 ## Fase 5 — Respaldo en Google Sheets
 - Un archivo por año en el Drive del admin, compartido con la cuenta de servicio.
-- Cada presupuesto aprobado → se duplica la pestaña plantilla (FORMATO), se llena y se
+- Cada presupuesto listo → se duplica la pestaña plantilla (FORMATO), se llena y se
   insertan filas si hace falta. Link guardado en `presupuestos.sheet_url`.
 - Si Google falla, el presupuesto igual se guarda y se reintenta después.
 

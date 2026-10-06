@@ -9,16 +9,17 @@ App web para crear, gestionar y respaldar los presupuestos de un taller familiar
 de reconstrucción de buses. Reemplaza el flujo actual (copiar una pestaña de
 Excel y editarla a mano) y da estadísticas de todo el histórico.
 
-Usuarios (3, todos con cuenta de Google):
-- **admin**: el desarrollador / dueño del repo.
-- **editor**: la persona que arma los presupuestos.
-- **revisor**: el jefe; revisa cada presupuesto antes de que se mande al cliente.
+Usuarios: todos tienen los **mismos permisos** (rol `usuario`), salvo el **admin**
+(dueño del repo), que además autoriza o niega el acceso. Quien entra por primera vez
+queda `pendiente` en la tabla `usuarios` hasta que el admin lo aprueba en la página
+**Usuarios** (`/usuarios`, API `/api/usuarios`).
 
-Flujo de un presupuesto: `borrador` → `en_revision` → `aprobado` → `enviado` (se
-manda como PDF). Un **trabajo** agrupa el presupuesto original y sus **extras**
-("EXTRAS", "OTRAS EXTRAS"… = el mismo trabajo con cosas agregadas). Estado del
-trabajo: `cotizado`, `en_curso`, `terminado`, `no_concretado`. Todo el histórico
-entra como `terminado`.
+Flujo real del negocio: la persona que arma el presupuesto lo deja `listo`, genera el
+**PDF** y se lo pasa al jefe, que lo revisa y lo manda al cliente **fuera de la app**.
+Estados del presupuesto: `borrador` → `listo`. Un **trabajo** agrupa el presupuesto
+original y sus **extras** ("EXTRAS", "OTRAS EXTRAS"… = el mismo trabajo con cosas
+agregadas). Estado del trabajo: `cotizado`, `en_curso`, `terminado`, `no_concretado`.
+Todo el histórico entra como `terminado` y sus presupuestos como `listo`.
 
 ## Reglas que no se rompen
 
@@ -41,7 +42,7 @@ entra como `terminado`.
 | Frontend | React 19 + Vite 8 + TypeScript + Tailwind 4 + TanStack Query + React Router |
 | API | Hono en Cloudflare Workers (mismo Worker sirve el SPA y `/api/*`) |
 | Base de datos | Postgres en Neon (plan gratis) + Drizzle ORM (driver HTTP `neon-http` en el Worker, `postgres-js` en scripts) |
-| Login | Cloudflare Access delante de la app; el Worker verifica el JWT (`Cf-Access-Jwt-Assertion`) y busca el correo en `usuarios`. En local, `DEV_AUTH_EMAIL` en `.dev.vars`. |
+| Login | Cloudflare Access delante de la app (cualquier correo puede identificarse); el Worker verifica el JWT (`Cf-Access-Jwt-Assertion`) y solo deja pasar correos `activo` en `usuarios`. En local, `DEV_AUTH_EMAIL` en `.dev.vars`. |
 | Respaldo | Google Sheets API con cuenta de servicio: una pestaña por presupuesto, copiando la plantilla con el formato de siempre (fase 5) |
 | Deploy | Cloudflare Workers Builds conectado a GitHub: push a `main` → build → deploy |
 | Tests | Vitest; PGlite para probar migraciones y carga sin Postgres real |
@@ -104,20 +105,24 @@ npm run etl:load          # historico.json → base (idempotente)
 
 Ver `docs/PLAN.md`. Actual:
 
-- [x] Fase 0 — Base: estructura, Worker + SPA, auth, CI, privacidad
+- [x] Fase 0 — Base: estructura, Worker + SPA, auth con solicitudes de acceso, página Usuarios, CI, privacidad
 - [x] Fase 1 — Esquema + ETL (parse, reporte, carga probada con PGlite)
-- [ ] Cuentas: Neon, Cloudflare (Workers Builds + Access), Google Cloud (cuenta de servicio)
+- [ ] Cuentas: Neon, Cloudflare (Workers Builds + Access), Google Cloud (cuenta de servicio). Se crean desde el navegador del dueño: el navegador integrado no pasa la verificación anti-bots y el entorno de Claude no llega a las APIs de Neon/Cloudflare.
 - [ ] Fase 2 — Estadísticas en la app
 - [ ] Fase 3 — CRUD clientes / buses / productos
-- [ ] Fase 4 — Editor de presupuestos + flujo de revisión + PDF
+- [ ] Fase 4 — Editor de presupuestos + PDF
 - [ ] Fase 5 — Respaldo en Google Sheets con el formato de siempre
 - [ ] Fase 6 — Pulido
 
 ## Decisiones (más reciente arriba)
+
+- 2026-10-06 — Roles simplificados: `admin` (autoriza/niega acceso) y `usuario` (todo lo demás,
+  todos iguales). Sin rol revisor: el jefe revisa el PDF fuera de la app. Estados del
+  presupuesto: `borrador`/`listo`. Acceso por solicitud: Access identifica, la app autoriza.
 
 - 2026-10-06 — Hosting en Cloudflare Workers (gratis, permite uso comercial, no se duerme).
   Vercel Hobby descartado (prohíbe uso comercial); Render gratis se duerme; Supabase gratis
   pausa por inactividad; Netlify gratis cobra créditos por deploy.
 - 2026-10-06 — Respaldo en Sheets vive en el Drive del admin; se escriben pestañas
   dentro de un archivo existente (las cuentas de servicio no tienen cuota de Drive para crear archivos).
-- 2026-10-06 — El PDF es el entregable al cliente: el revisor aprueba antes de enviar.
+- 2026-10-06 — El PDF es el entregable: se le pasa al jefe, que lo revisa y lo manda al cliente.

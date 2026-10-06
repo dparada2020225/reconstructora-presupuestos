@@ -18,4 +18,7 @@ export async function api<T>(ruta: string, init?: RequestInit): Promise<T> {
   return cuerpo as T;
 }
 
-export type Usuario = { id: number; email: string; nombre: string; rol: "admin" | "editor" | "revisor" };
+export type Rol = "admin" | "usuario";
+export type EstadoUsuario = "pendiente" | "activo" | "denegado";
+export type Usuario = { id: number; email: string; nombre: string; rol: Rol };
+export type UsuarioAdmin = Usuario & { estado: EstadoUsuario; creadoEn: string };

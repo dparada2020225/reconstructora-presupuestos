@@ -6,6 +6,7 @@ import { Layout } from "./components/Layout";
 import "./index.css";
 import { Inicio } from "./pages/Inicio";
 import { Pendiente } from "./pages/Pendiente";
+import { Usuarios } from "./pages/Usuarios";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
       { path: "buses", element: <Pendiente titulo="Buses" fase={3} /> },
       { path: "productos", element: <Pendiente titulo="Productos" fase={3} /> },
       { path: "estadisticas", element: <Pendiente titulo="Estadísticas" fase={2} /> },
+      { path: "usuarios", element: <Usuarios /> },
       { path: "*", element: <Pendiente titulo="Página no encontrada" /> },
     ],
   },

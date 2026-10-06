@@ -35,17 +35,28 @@ async function emailDeLaPeticion(req: Request, env: Env): Promise<string | null>
   }
 }
 
-/** Exige un usuario activo registrado en la tabla `usuarios`. */
+/**
+ * Exige un usuario ACTIVO. Quien entra por primera vez (ya pasó Cloudflare Access)
+ * queda registrado como "pendiente" hasta que un admin lo autoriza o lo niega.
+ */
 export const requiereUsuario = createMiddleware<AppEnv>(async (c, next) => {
-  const email = await emailDeLaPeticion(c.req.raw, c.env);
+  const email = (await emailDeLaPeticion(c.req.raw, c.env))?.toLowerCase();
   if (!email) throw new HTTPException(401, { message: "No autenticado" });
 
   const [u] = await c.var.db
-    .select({ id: usuarios.id, email: usuarios.email, nombre: usuarios.nombre, rol: usuarios.rol, activo: usuarios.activo })
+    .select({ id: usuarios.id, email: usuarios.email, nombre: usuarios.nombre, rol: usuarios.rol, estado: usuarios.estado })
     .from(usuarios)
-    .where(eq(usuarios.email, email.toLowerCase()))
+    .where(eq(usuarios.email, email))
     .limit(1);
-  if (!u || !u.activo) throw new HTTPException(403, { message: "Usuario sin acceso" });
+
+  if (!u) {
+    await c.var.db
+      .insert(usuarios)
+      .values({ email, nombre: email.split("@")[0], estado: "pendiente" })
+      .onConflictDoNothing();
+    throw new HTTPException(403, { message: "pendiente" });
+  }
+  if (u.estado !== "activo") throw new HTTPException(403, { message: u.estado });
 
   const usuario: Usuario = { id: u.id, email: u.email, nombre: u.nombre, rol: u.rol };
   c.set("usuario", usuario);

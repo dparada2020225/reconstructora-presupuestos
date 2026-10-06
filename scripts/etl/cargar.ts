@@ -136,7 +136,7 @@ export async function cargarHistorico(db: Db, h: Historico) {
             titulo: p.titulo,
             fecha: p.fecha,
             lugar: p.lugar,
-            estado: "enviado",
+            estado: "listo",
             total: money(p.total),
             cerradoEn: money(p.cerradoEn),
             anticipo: money(p.anticipo),

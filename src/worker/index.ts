@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { ZodError } from "zod";
 import { crearDb } from "./db";
 import type { AppEnv } from "./env";
 import { requiereUsuario } from "./middleware/auth";
+import { rutasUsuarios } from "./routes/usuarios";
 
 const app = new Hono<AppEnv>().basePath("/api");
 
@@ -25,9 +27,11 @@ app.get("/health", async (c) => {
 app.use("*", requiereUsuario);
 
 app.get("/me", (c) => c.json(c.var.usuario));
+app.route("/usuarios", rutasUsuarios);
 
 app.onError((err, c) => {
   if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);
+  if (err instanceof ZodError) return c.json({ error: "Datos inválidos", detalles: err.issues }, 400);
   console.error(err);
   return c.json({ error: "Error interno" }, 500);
 });

@@ -16,7 +16,11 @@ import {
 
 /* ───────────────────────── Enums ───────────────────────── */
 
-export const rolUsuario = pgEnum("rol_usuario", ["admin", "editor", "revisor"]);
+/** admin: además de usar la app, aprueba o niega el acceso a otros. usuario: todo lo demás. */
+export const rolUsuario = pgEnum("rol_usuario", ["admin", "usuario"]);
+
+/** Quien entra por primera vez queda "pendiente" hasta que un admin lo autoriza. */
+export const estadoUsuario = pgEnum("estado_usuario", ["pendiente", "activo", "denegado"]);
 
 /** Estado del trabajo completo (original + extras). */
 export const estadoTrabajo = pgEnum("estado_trabajo", [
@@ -26,13 +30,11 @@ export const estadoTrabajo = pgEnum("estado_trabajo", [
   "no_concretado",
 ]);
 
-/** Flujo de cada documento: lo arma el editor, lo revisa el revisor y se envía. */
-export const estadoPresupuesto = pgEnum("estado_presupuesto", [
-  "borrador",
-  "en_revision",
-  "aprobado",
-  "enviado",
-]);
+/**
+ * borrador: se está armando. listo: ya se generó el PDF y se entregó para revisión/envío
+ * (la revisión del jefe pasa fuera de la app).
+ */
+export const estadoPresupuesto = pgEnum("estado_presupuesto", ["borrador", "listo"]);
 
 export const tipoPresupuesto = pgEnum("tipo_presupuesto", ["original", "extra"]);
 
@@ -56,8 +58,8 @@ export const usuarios = pgTable("usuarios", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   nombre: text("nombre").notNull(),
-  rol: rolUsuario("rol").notNull().default("editor"),
-  activo: boolean("activo").notNull().default(true),
+  rol: rolUsuario("rol").notNull().default("usuario"),
+  estado: estadoUsuario("estado").notNull().default("pendiente"),
   ...timestamps,
 });
 
@@ -182,7 +184,6 @@ export const presupuestos = pgTable(
     origenRef: text("origen_ref"),
     origen: origenRegistro("origen").notNull().default("app"),
     creadoPor: integer("creado_por").references(() => usuarios.id, { onDelete: "set null" }),
-    revisadoPor: integer("revisado_por").references(() => usuarios.id, { onDelete: "set null" }),
     ...timestamps,
   },
   (t) => [

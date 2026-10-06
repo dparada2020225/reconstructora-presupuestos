@@ -24,13 +24,14 @@ export function Layout() {
           </div>
           {usuario && (
             <span className="text-sm text-marca-100">
-              {usuario.nombre} · <span className="capitalize">{usuario.rol}</span>
+              {usuario.nombre}
+              {usuario.rol === "admin" && <span className="ml-2 rounded bg-marca-600 px-1.5 py-0.5 text-xs">admin</span>}
             </span>
           )}
         </div>
         <nav className="mx-auto max-w-6xl overflow-x-auto px-2">
           <ul className="flex gap-1 text-sm">
-            {enlaces.map((e) => (
+            {[...enlaces, ...(usuario?.rol === "admin" ? [{ to: "/usuarios", label: "Usuarios", end: false }] : [])].map((e) => (
               <li key={e.to}>
                 <NavLink
                   to={e.to}

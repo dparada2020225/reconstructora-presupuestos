@@ -1,5 +1,5 @@
 {
-  "id": "57f1844e-76d6-4831-ab4e-ede0b1a31014",
+  "id": "1cc78947-6ab4-4e9b-af9d-973f039c700d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -516,12 +516,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "revisado_por": {
-          "name": "revisado_por",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "creado_en": {
           "name": "creado_en",
           "type": "timestamp with time zone",
@@ -589,19 +583,6 @@
           "tableTo": "usuarios",
           "columnsFrom": [
             "creado_por"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "presupuestos_revisado_por_usuarios_id_fk": {
-          "name": "presupuestos_revisado_por_usuarios_id_fk",
-          "tableFrom": "presupuestos",
-          "tableTo": "usuarios",
-          "columnsFrom": [
-            "revisado_por"
           ],
           "columnsTo": [
             "id"
@@ -924,14 +905,15 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'editor'"
+          "default": "'usuario'"
         },
-        "activo": {
-          "name": "activo",
-          "type": "boolean",
+        "estado": {
+          "name": "estado",
+          "type": "estado_usuario",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": true
+          "default": "'pendiente'"
         },
         "creado_en": {
           "name": "creado_en",
@@ -971,9 +953,7 @@
       "schema": "public",
       "values": [
         "borrador",
-        "en_revision",
-        "aprobado",
-        "enviado"
+        "listo"
       ]
     },
     "public.estado_trabajo": {
@@ -984,6 +964,15 @@
         "en_curso",
         "terminado",
         "no_concretado"
+      ]
+    },
+    "public.estado_usuario": {
+      "name": "estado_usuario",
+      "schema": "public",
+      "values": [
+        "pendiente",
+        "activo",
+        "denegado"
       ]
     },
     "public.origen_registro": {
@@ -999,8 +988,7 @@
       "schema": "public",
       "values": [
         "admin",
-        "editor",
-        "revisor"
+        "usuario"
       ]
     },
     "public.tipo_presupuesto": {

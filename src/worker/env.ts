@@ -18,7 +18,7 @@ export interface Usuario {
   id: number;
   email: string;
   nombre: string;
-  rol: "admin" | "editor" | "revisor";
+  rol: "admin" | "usuario";
 }
 
 export type AppEnv = {

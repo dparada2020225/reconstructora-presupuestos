@@ -1,7 +1,8 @@
-CREATE TYPE "public"."estado_presupuesto" AS ENUM('borrador', 'en_revision', 'aprobado', 'enviado');--> statement-breakpoint
+CREATE TYPE "public"."estado_presupuesto" AS ENUM('borrador', 'listo');--> statement-breakpoint
 CREATE TYPE "public"."estado_trabajo" AS ENUM('cotizado', 'en_curso', 'terminado', 'no_concretado');--> statement-breakpoint
+CREATE TYPE "public"."estado_usuario" AS ENUM('pendiente', 'activo', 'denegado');--> statement-breakpoint
 CREATE TYPE "public"."origen_registro" AS ENUM('app', 'historico');--> statement-breakpoint
-CREATE TYPE "public"."rol_usuario" AS ENUM('admin', 'editor', 'revisor');--> statement-breakpoint
+CREATE TYPE "public"."rol_usuario" AS ENUM('admin', 'usuario');--> statement-breakpoint
 CREATE TYPE "public"."tipo_presupuesto" AS ENUM('original', 'extra');--> statement-breakpoint
 CREATE TABLE "buses" (
 	"id" serial PRIMARY KEY NOT NULL,
@@ -64,7 +65,6 @@ CREATE TABLE "presupuestos" (
 	"origen_ref" text,
 	"origen" "origen_registro" DEFAULT 'app' NOT NULL,
 	"creado_por" integer,
-	"revisado_por" integer,
 	"creado_en" timestamp with time zone DEFAULT now() NOT NULL,
 	"actualizado_en" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -108,8 +108,8 @@ CREATE TABLE "usuarios" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"nombre" text NOT NULL,
-	"rol" "rol_usuario" DEFAULT 'editor' NOT NULL,
-	"activo" boolean DEFAULT true NOT NULL,
+	"rol" "rol_usuario" DEFAULT 'usuario' NOT NULL,
+	"estado" "estado_usuario" DEFAULT 'pendiente' NOT NULL,
 	"creado_en" timestamp with time zone DEFAULT now() NOT NULL,
 	"actualizado_en" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "usuarios_email_unique" UNIQUE("email")
@@ -122,7 +122,6 @@ ALTER TABLE "presupuesto_items" ADD CONSTRAINT "presupuesto_items_parent_id_pres
 ALTER TABLE "presupuesto_items" ADD CONSTRAINT "presupuesto_items_producto_id_productos_id_fk" FOREIGN KEY ("producto_id") REFERENCES "public"."productos"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "presupuestos" ADD CONSTRAINT "presupuestos_trabajo_id_trabajos_id_fk" FOREIGN KEY ("trabajo_id") REFERENCES "public"."trabajos"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "presupuestos" ADD CONSTRAINT "presupuestos_creado_por_usuarios_id_fk" FOREIGN KEY ("creado_por") REFERENCES "public"."usuarios"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "presupuestos" ADD CONSTRAINT "presupuestos_revisado_por_usuarios_id_fk" FOREIGN KEY ("revisado_por") REFERENCES "public"."usuarios"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "producto_alias" ADD CONSTRAINT "producto_alias_producto_id_productos_id_fk" FOREIGN KEY ("producto_id") REFERENCES "public"."productos"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "trabajos" ADD CONSTRAINT "trabajos_cliente_id_clientes_id_fk" FOREIGN KEY ("cliente_id") REFERENCES "public"."clientes"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "trabajos" ADD CONSTRAINT "trabajos_bus_id_buses_id_fk" FOREIGN KEY ("bus_id") REFERENCES "public"."buses"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

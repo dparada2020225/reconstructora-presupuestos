@@ -12,7 +12,7 @@ y en los secretos del Worker; nunca en el repo.
    - `main` → secreto `DATABASE_URL` del Worker y `.env` cuando cargues datos reales.
    - `dev` → `.dev.vars` y `.env` para desarrollar.
 4. `npm run db:migrate` (con la URL correspondiente en `.env`) para crear las tablas.
-5. `npm run db:seed-usuarios` con `SEED_USUARIOS` en `.env`.
+5. `npm run db:seed-usuarios` con `SEED_USUARIOS` en `.env` (solo tu correo como admin).
 
 ## 2. Cloudflare Workers (hosting + deploy automático)
 
@@ -32,10 +32,12 @@ y en los secretos del Worker; nunca en el repo.
    (queda `<equipo>.cloudflareaccess.com` → `ACCESS_TEAM_DOMAIN`).
 2. **Access → Applications → Add → Self-hosted**: dominio del Worker
    (`reconstructora-presupuestos.<cuenta>.workers.dev`).
-3. Política **Allow** con *Emails* = los correos de los usuarios.
-4. Método de login: Google o "One-time PIN" por correo.
+3. Política **Allow** con *Include → Everyone*: Access solo identifica el correo;
+   quién entra de verdad lo decide la app (tabla `usuarios`).
+4. Método de login: "One-time PIN" (código al correo) y, si se quiere, Google.
 5. Copiar el **Application Audience (AUD) Tag** → secreto `ACCESS_AUD`.
-6. Los mismos correos deben existir en la tabla `usuarios` (seed).
+6. Sembrar solo al admin (`npm run db:seed-usuarios`). Los demás entran, quedan
+   pendientes y el admin los autoriza en la página **Usuarios**.
 
 ## 4. Google Cloud (respaldo en Sheets, fase 5)
 

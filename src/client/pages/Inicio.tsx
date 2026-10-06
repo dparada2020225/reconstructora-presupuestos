@@ -21,9 +21,11 @@ export function Inicio() {
 
       {me.error instanceof ApiError && (
         <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          {me.error.status === 403
-            ? "Tu correo no está registrado como usuario de la app."
-            : `No se pudo identificar al usuario (${me.error.message}).`}
+          {me.error.message === "pendiente"
+            ? "Tu solicitud de acceso quedó registrada. Avísale al administrador para que la apruebe."
+            : me.error.message === "denegado"
+              ? "Tu acceso a la app fue denegado."
+              : `No se pudo identificar al usuario (${me.error.message}).`}
         </p>
       )}
     </section>

@@ -2,7 +2,7 @@
 
 App web para crear, gestionar y respaldar presupuestos de un taller de
 reconstrucción de buses: clientes, unidades, catálogo de trabajos, extras,
-estados, revisión antes de enviar y estadísticas del histórico.
+estados, PDF y estadísticas del histórico.
 
 - **Frontend:** React + Vite + TypeScript + Tailwind
 - **API:** Hono en Cloudflare Workers
