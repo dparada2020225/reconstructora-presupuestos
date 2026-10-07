@@ -32,10 +32,15 @@ export const estadoTrabajo = pgEnum("estado_trabajo", [
 ]);
 
 /**
- * borrador: se está armando. listo: ya se generó el PDF y se entregó para revisión/envío
- * (la revisión del jefe pasa fuera de la app).
+ * Estado de cada presupuesto (original o extra):
+ * borrador (se está armando) → cotizacion (PDF entregado al cliente) → en_curso (aceptado,
+ * se está trabajando) → terminado. cancelado = el cliente no lo aceptó o se canceló.
+ * El estado del TRABAJO se calcula a partir de estos (ver shared/estados.ts).
  */
-export const estadoPresupuesto = pgEnum("estado_presupuesto", ["borrador", "listo"]);
+export const estadoPresupuesto = pgEnum("estado_presupuesto", ["borrador", "cotizacion", "en_curso", "terminado", "cancelado"]);
+
+/** Forma de pago de un abono. null = no se sabe (anticipos que venían del Excel). */
+export const formaPago = pgEnum("forma_pago", ["efectivo", "cheque", "transferencia"]);
 
 export const tipoPresupuesto = pgEnum("tipo_presupuesto", ["original", "extra"]);
 
@@ -203,7 +208,7 @@ export const presupuestos = pgTable(
     total: quetzales("total"),
     /** "Cerrado en": precio negociado de este documento. */
     cerradoEn: quetzales("cerrado_en"),
-    /** Anticipo registrado en el documento (los pagos formales llegan en otra fase). */
+    /** Suma de los abonos (tabla pagos); se recalcula al registrar o borrar uno. */
     anticipo: quetzales("anticipo"),
     notas: text("notas"),
     notaPie: text("nota_pie"),
@@ -219,6 +224,24 @@ export const presupuestos = pgTable(
     index("presupuestos_trabajo_idx").on(t.trabajoId),
     index("presupuestos_fecha_idx").on(t.fecha),
   ],
+);
+
+/** Abonos que el cliente da a un presupuesto. Su suma es el "anticipo" que sale en el PDF. */
+export const pagos = pgTable(
+  "pagos",
+  {
+    id: serial("id").primaryKey(),
+    presupuestoId: integer("presupuesto_id")
+      .notNull()
+      .references(() => presupuestos.id, { onDelete: "cascade" }),
+    fecha: date("fecha").notNull(),
+    monto: quetzales("monto").notNull(),
+    forma: formaPago("forma"),
+    nota: text("nota"),
+    creadoPor: integer("creado_por").references(() => usuarios.id, { onDelete: "set null" }),
+    creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("pagos_presupuesto_idx").on(t.presupuestoId)],
 );
 
 export const presupuestoItems = pgTable(

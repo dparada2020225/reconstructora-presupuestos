@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { nombreDocumento } from "../../shared/presupuesto";
+import { ESTADOS_PRESUPUESTO, type EstadoPresupuesto } from "../../shared/estados";
 import { api, type PresupuestoFila } from "../api";
-import { Aviso, Buscador, coincide, Encabezado, ESTADO_TRABAJO, fechaCorta, formatoQ, Insignia } from "../components/ui";
+import { Aviso, Buscador, coincide, Encabezado, ESTADO_PRESUPUESTO, fechaCorta, formatoQ, Insignia } from "../components/ui";
 
-type Filtro = "todos" | "borrador" | "listo";
+type Filtro = "todos" | EstadoPresupuesto;
 
 export function Presupuestos() {
   const lista = useQuery({ queryKey: ["presupuestos"], queryFn: () => api<PresupuestoFila[]>("/presupuestos") });
@@ -14,7 +15,7 @@ export function Presupuestos() {
   const [cuantos, setCuantos] = useState(60);
   const navegar = useNavigate();
 
-  const borradores = lista.data?.filter((p) => p.estado === "borrador").length ?? 0;
+  const cuenta = (e: EstadoPresupuesto) => lista.data?.filter((p) => p.estado === e).length ?? 0;
   const filas = useMemo(
     () =>
       (lista.data ?? []).filter(
@@ -36,14 +37,8 @@ export function Presupuestos() {
       />
       <div className="flex flex-wrap items-center gap-3">
         <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar por cliente, bus o placa" />
-        <div className="flex rounded-md border border-slate-300 bg-white p-0.5 text-sm" role="group" aria-label="Filtrar por estado">
-          {(
-            [
-              ["todos", "Todos"],
-              ["borrador", `Borradores${borradores ? ` (${borradores})` : ""}`],
-              ["listo", "Listos"],
-            ] as [Filtro, string][]
-          ).map(([k, t]) => (
+        <div className="flex flex-wrap rounded-md border border-slate-300 bg-white p-0.5 text-sm" role="group" aria-label="Filtrar por estado">
+          {([["todos", "Todos"], ...ESTADOS_PRESUPUESTO.map((e) => [e, `${ESTADO_PRESUPUESTO[e].texto}${cuenta(e) ? ` (${cuenta(e)})` : ""}`])] as [Filtro, string][]).map(([k, t]) => (
             <button
               key={k}
               type="button"
@@ -84,9 +79,8 @@ export function Presupuestos() {
                   </td>
                   <td className="px-2 py-2 text-slate-600">{[p.placa, p.bus].filter(Boolean).join(" / ") || <span className="text-slate-300">—</span>}</td>
                   <td className="px-2 py-2 text-slate-700">{nombreDocumento(p)}</td>
-                  <td className="space-x-1 px-2 py-2">
-                    {p.estado === "borrador" ? <Insignia clase="bg-amber-100 text-amber-900">Borrador</Insignia> : null}
-                    <Insignia clase={ESTADO_TRABAJO[p.estadoTrabajo].clase}>{ESTADO_TRABAJO[p.estadoTrabajo].texto}</Insignia>
+                  <td className="px-2 py-2">
+                    <Insignia clase={ESTADO_PRESUPUESTO[p.estado].clase}>{ESTADO_PRESUPUESTO[p.estado].texto}</Insignia>
                   </td>
                   <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">
                     {formatoQ(p.total)}

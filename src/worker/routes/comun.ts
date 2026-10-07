@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, or, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
@@ -81,6 +81,7 @@ export async function trabajosDonde(db: Db, donde: SQL | undefined) {
       estado: s.presupuestos.estado,
       total: s.presupuestos.total,
       cerradoEn: s.presupuestos.cerradoEn,
+      abonado: sql<string | null>`(select sum(pagos.monto) from pagos where pagos.presupuesto_id = presupuestos.id)`,
     })
     .from(s.presupuestos)
     .where(inArray(s.presupuestos.trabajoId, trabajos.map((t) => t.id)))
@@ -90,14 +91,16 @@ export async function trabajosDonde(db: Db, donde: SQL | undefined) {
     .map((t) => {
       const ps = presupuestos
         .filter((p) => p.trabajoId === t.id)
-        .map((p) => ({ ...p, total: Number(p.total ?? 0), cerradoEn: numONull(p.cerradoEn) }));
-      const m = montoTrabajo(ps);
+        .map((p) => ({ ...p, total: Number(p.total ?? 0), cerradoEn: numONull(p.cerradoEn), abonado: Number(p.abonado ?? 0) }));
+      // Los cancelados no suman al trabajo.
+      const m = montoTrabajo(ps.filter((p) => p.estado !== "cancelado"));
       return {
         ...t,
         fecha: ps[0]?.fecha ?? t.fechaInicio,
         presupuestos: ps.map(({ trabajoId: _, ...p }) => p),
         cotizado: m.cotizado,
         monto: m.final,
+        abonado: ps.reduce((a, p) => a + p.abonado, 0),
       };
     })
     .sort((a, b) => (b.fecha ?? "").localeCompare(a.fecha ?? ""));

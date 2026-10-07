@@ -1,6 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
-import { generarPdf, nombreArchivoPdf, type DatosPdf } from "./pdf-presupuesto";
+import { generarPdf, generarPdfTrabajo, nombreArchivoPdf, nombreArchivoPdfTrabajo, type DatosPdf } from "./pdf-presupuesto";
 import { AJUSTES_VACIOS } from "./presupuesto";
 
 /** Datos inventados. */
@@ -35,6 +35,19 @@ describe("PDF del presupuesto", () => {
       documentosTrabajo: [{ id: 9, tipo: "original", numero: 0, total: 10000, cerradoEn: 9000 }, { id: 1, tipo: "extra", numero: 1, total: 3800, cerradoEn: null }],
     }));
     expect((await PDFDocument.load(pdf)).getPageCount()).toBe(1);
+  });
+
+  it("documento unificado: original + extras, sin cancelados", async () => {
+    const d = datos(5);
+    const doc = (id: number, numero: number, estado: string) => ({
+      id, tipo: numero ? ("extra" as const) : ("original" as const), numero, total: 1000, cerradoEn: null, estado, fecha: "2026-03-02", items: d.items,
+    });
+    const pdf = await generarPdfTrabajo({
+      ajustes: d.ajustes, cliente: "Cliente Inventado", placa: null, bus: "La Prueba", lugar: "Pueblo", fecha: "2026-04-01", abonado: 500,
+      documentos: [doc(1, 0, "terminado"), doc(2, 1, "en_curso"), doc(3, 2, "cancelado")],
+    });
+    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThanOrEqual(2);
+    expect(nombreArchivoPdfTrabajo({ cliente: "Ana", fecha: "2026-04-01" })).toBe("Trabajo completo Ana 2026-04-01.pdf");
   });
 
   it("nombre del archivo", () => {

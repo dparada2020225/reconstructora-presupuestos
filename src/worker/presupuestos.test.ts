@@ -117,19 +117,51 @@ describe("presupuestos", () => {
     expect(t.json).toMatchObject({ monto: 10100, cotizado: 10600, estado: "cotizado" });
   });
 
-  it("estado del presupuesto y del trabajo", async () => {
-    expect((await pedir("PATCH", `/presupuestos/${id}/estado`, { estado: "listo" })).status).toBe(200);
+  it("estados de los presupuestos y del trabajo", async () => {
+    const t = async () => (await pedir("GET", `/trabajos/${trabajoId}`)).json;
+    // Original + 2 extras, todos borrador → trabajo cotizado.
+    expect((await t()).estado).toBe("cotizado");
+    expect((await pedir("PATCH", `/presupuestos/${id}/estado`, { estado: "listo" })).status).toBe(400);
+    await pedir("PATCH", `/presupuestos/${id}/estado`, { estado: "en_curso" });
+    expect((await t()).estado).toBe("en_curso");
     expect((await pedir("DELETE", `/presupuestos/${id}`)).status).toBe(409);
-    await pedir("PATCH", `/trabajos/${trabajoId}`, { estado: "terminado" });
-    const t = await pedir("GET", `/trabajos/${trabajoId}`);
-    expect(t.json.estado).toBe("terminado");
-    expect(t.json.fechaFin).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    const hermanos = (await pedir("GET", `/presupuestos/${id}`)).json.hermanos.map((h: any) => h.id);
+    await pedir("PATCH", `/presupuestos/${hermanos[1]}/estado`, { estado: "cancelado" });
+    await pedir("PATCH", `/presupuestos/${id}/estado`, { estado: "terminado" });
+    // Queda Extra 2 en borrador: no cuenta → todo lo vigente está terminado.
+    const t1 = await t();
+    expect(t1.estado).toBe("terminado");
+    expect(t1.fechaFin).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // El extra cancelado ya no suma: 8000 (cerrado) + 900 del borrador.
+    expect(t1.monto).toBe(8900);
+
+    await pedir("PATCH", `/presupuestos/${hermanos[2]}/estado`, { estado: "cotizacion" });
+    expect((await t()).estado).toBe("en_curso");
+  });
+
+  it("abonos: suman el anticipo y se pueden borrar", async () => {
+    expect((await pedir("POST", `/presupuestos/${id}/pagos`, { fecha: "2026-03-10", monto: 0, forma: "efectivo" })).status).toBe(400);
+    expect((await pedir("POST", `/presupuestos/${id}/pagos`, { fecha: "2026-03-10", monto: 3000, forma: "efectivo", nota: "Primer abono" })).status).toBe(201);
+    await pedir("POST", `/presupuestos/${id}/pagos`, { fecha: "2026-03-20", monto: 2500.5, forma: "transferencia" });
+    let p = (await pedir("GET", `/presupuestos/${id}`)).json;
+    expect(p.anticipo).toBe(5500.5);
+    expect(p.pagos.map((g: any) => [g.monto, g.forma, g.creadoPor])).toEqual([[3000, "efectivo", "Admin"], [2500.5, "transferencia", "Admin"]]);
+    // Guardar el presupuesto no toca el anticipo.
+    await pedir("PUT", `/presupuestos/${id}`, base([linea("Pintura afuera", 8500, { productoId })], { cerradoEn: 8000, fecha: "2026-03-05", anticipo: null }));
+    expect((await pedir("GET", `/presupuestos/${id}`)).json.anticipo).toBe(5500.5);
+    expect((await pedir("GET", `/trabajos/${trabajoId}`)).json.abonado).toBe(5500.5);
+
+    for (const g of p.pagos) await pedir("DELETE", `/presupuestos/${id}/pagos/${g.id}`);
+    p = (await pedir("GET", `/presupuestos/${id}`)).json;
+    expect([p.anticipo, p.pagos.length]).toEqual([null, 0]);
+    expect((await pedir("DELETE", `/presupuestos/${id}/pagos/99999`)).status).toBe(404);
   });
 
   it("la lista trae cliente, bus y documento", async () => {
     const { json } = await pedir<any[]>("GET", "/presupuestos");
     expect(json).toHaveLength(3);
-    expect(json.find((p) => p.id === id)).toMatchObject({ cliente: "Cliente Inventado", bus: "La Prueba", estado: "listo", total: 8500 });
+    expect(json.find((p) => p.id === id)).toMatchObject({ cliente: "Cliente Inventado", bus: "La Prueba", estado: "terminado", total: 8500 });
   });
 
   it("borrar el único borrador de un trabajo borra el trabajo", async () => {

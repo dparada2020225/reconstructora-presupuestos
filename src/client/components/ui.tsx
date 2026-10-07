@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Link } from "react-router";
 import { normalizar } from "../../shared/texto";
-import type { EstadoTrabajo } from "../api";
+import type { EstadoPresupuesto, EstadoTrabajo, FormaPago } from "../api";
 
 /* ───────────── Formatos ───────────── */
 
@@ -16,6 +16,44 @@ export const ESTADO_TRABAJO: Record<EstadoTrabajo, { texto: string; clase: strin
   terminado: { texto: "Terminado", clase: "bg-emerald-100 text-emerald-900" },
   no_concretado: { texto: "No se concretó", clase: "bg-slate-200 text-slate-700" },
 };
+
+export const ESTADO_PRESUPUESTO: Record<EstadoPresupuesto, { texto: string; clase: string }> = {
+  borrador: { texto: "Borrador", clase: "bg-slate-200 text-slate-700" },
+  cotizacion: { texto: "Cotización", clase: "bg-sky-100 text-sky-900" },
+  en_curso: { texto: "En curso", clase: "bg-amber-100 text-amber-900" },
+  terminado: { texto: "Terminado", clase: "bg-emerald-100 text-emerald-900" },
+  cancelado: { texto: "Cancelado", clase: "bg-red-100 text-red-800" },
+};
+
+export const FORMA_PAGO: Record<FormaPago, string> = { efectivo: "Efectivo", cheque: "Cheque", transferencia: "Transferencia" };
+
+/** Aro con el porcentaje en el centro (p. ej. lo abonado de un presupuesto). */
+export function Aro({ valor, tamano = 96, etiqueta }: { valor: number; tamano?: number; etiqueta: string }) {
+  const r = 40;
+  const largo = 2 * Math.PI * r;
+  const pct = Math.round(valor * 100);
+  return (
+    <svg viewBox="0 0 100 100" width={tamano} height={tamano} role="img" aria-label={`${etiqueta}: ${pct}%`} className="shrink-0">
+      <circle cx="50" cy="50" r={r} fill="none" stroke="#e2e8f0" strokeWidth="10" />
+      {valor > 0 && (
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          fill="none"
+          stroke={valor >= 1 ? "#059669" : "#2a78d6"}
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={`${largo * valor} ${largo}`}
+          transform="rotate(-90 50 50)"
+        />
+      )}
+      <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fontSize="22" fontWeight="600" fill="#0f172a">
+        {pct}%
+      </text>
+    </svg>
+  );
+}
 
 /** Cada palabra buscada tiene que aparecer en alguno de los textos (sin tildes ni mayúsculas). */
 export function coincide(busqueda: string, ...textos: (string | null | undefined)[]) {

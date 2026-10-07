@@ -14,12 +14,15 @@ Usuarios: todos tienen los **mismos permisos** (rol `usuario`), salvo el **admin
 queda `pendiente` en la tabla `usuarios` hasta que el admin lo aprueba en la página
 **Usuarios** (`/usuarios`, API `/api/usuarios`).
 
-Flujo real del negocio: la persona que arma el presupuesto lo deja `listo`, genera el
-**PDF** y se lo pasa al jefe, que lo revisa y lo manda al cliente **fuera de la app**.
-Estados del presupuesto: `borrador` → `listo`. Un **trabajo** agrupa el presupuesto
-original y sus **extras** ("EXTRAS", "OTRAS EXTRAS"… = el mismo trabajo con cosas
-agregadas). Estado del trabajo: `cotizado`, `en_curso`, `terminado`, `no_concretado`.
-Todo el histórico entra como `terminado` y sus presupuestos como `listo`.
+Flujo real del negocio: la persona que arma el presupuesto genera el **PDF** y se lo pasa
+al jefe, que lo revisa y lo manda al cliente **fuera de la app**.
+Estados de cada presupuesto (original o extra): `borrador` → `cotizacion` → `en_curso` →
+`terminado`, o `cancelado`. Un **trabajo** agrupa el presupuesto original y sus **extras**
+("EXTRAS", "OTRAS EXTRAS"… = el mismo trabajo con cosas agregadas). El estado del trabajo
+(`cotizado`, `en_curso`, `terminado`, `no_concretado`) **se calcula** de sus presupuestos
+(`estadoDelTrabajo` en `src/shared/estados.ts`), no se edita. **Abonos** (tabla `pagos`,
+forma efectivo/cheque/transferencia) por presupuesto: su suma = `presupuestos.anticipo`
+(lo único de los abonos que sale en el PDF). Todo el histórico entra como `terminado`.
 
 ## Reglas que no se rompen
 
@@ -161,10 +164,21 @@ Ver `docs/PLAN.md`. Actual:
     NOTA centrada y firma en negrita; "c/u" solo si el precio por unidad es exacto; páginas numeradas si
     son varias. Datos del membrete salen de `configuracion` (página Ajustes; el admin los llena una vez
     por base, dev y production).
+- [x] Extras antes de la fase 5: logo centrado y línea verde en el PDF; 5 estados por presupuesto
+  (migración 0003, editada a mano: 'listo' → estado de su trabajo; anticipos → abonos); abonos con aro
+  de % en el editor (`src/client/editor/EstadoPagos.tsx`, API `POST/DELETE /api/presupuestos/:id/pagos`);
+  documento unificado del trabajo (`generarPdfTrabajo`: original + extras + resumen, botón bajo
+  "Total del trabajo" y en /trabajos/:id). Estadísticas excluyen borradores y cancelados; los cancelados
+  no suman al trabajo.
 - [ ] Fase 5 — Respaldo en Google Sheets con el formato de siempre
 - [ ] Fase 6 — Pulido
 
 ## Decisiones (más reciente arriba)
+
+- 2026-10-06 — Estado por presupuesto (5 estados) en vez de borrador/listo + estado del trabajo
+  editable; el del trabajo se deriva. El anticipo ya no se escribe a mano: es la suma de los abonos
+  (PUT del presupuesto no lo toca). Ojo: una función `async` que devuelve un builder de Drizzle lo
+  EJECUTA al hacer await (es thenable): para mandarlo a `enLote`, devolverlo envuelto en un objeto.
 
 - 2026-10-06 — Fase 4. El PDF se genera en el navegador (no en el Worker: ~10 ms de CPU). El membrete
   (correo, teléfono, firma, logo) vive en la tabla `configuracion`, no en el repo. Guardar un presupuesto

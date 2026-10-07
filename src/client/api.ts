@@ -27,7 +27,8 @@ export type EstadoUsuario = "pendiente" | "activo" | "denegado";
 export type Usuario = { id: number; email: string; nombre: string; rol: Rol };
 export type UsuarioAdmin = Usuario & { estado: EstadoUsuario; creadoEn: string };
 
-export type EstadoTrabajo = "cotizado" | "en_curso" | "terminado" | "no_concretado";
+import type { EstadoPresupuesto, EstadoTrabajo, FormaPago } from "../shared/estados";
+export type { EstadoPresupuesto, EstadoTrabajo, FormaPago };
 
 export interface TrabajoResumen {
   id: number;
@@ -41,15 +42,18 @@ export interface TrabajoResumen {
   placa: string | null;
   cotizado: number;
   monto: number;
+  /** Suma de los abonos de todos sus presupuestos. */
+  abonado: number;
   presupuestos: {
     id: number;
     tipo: "original" | "extra";
     numero: number;
     titulo: string | null;
     fecha: string | null;
-    estado: "borrador" | "listo";
+    estado: EstadoPresupuesto;
     total: number;
     cerradoEn: number | null;
+    abonado: number;
   }[];
 }
 
@@ -133,7 +137,14 @@ export interface ProductoDetalle {
 
 export type Descartado = { aId: number; bId: number };
 
-export type EstadoPresupuesto = "borrador" | "listo";
+export interface Pago {
+  id: number;
+  fecha: string;
+  monto: number;
+  forma: FormaPago | null;
+  nota: string | null;
+  creadoPor: string | null;
+}
 
 export interface PresupuestoFila {
   id: number;
@@ -196,6 +207,7 @@ export interface PresupuestoDetalle {
   origen: "app" | "historico";
   actualizadoEn: string;
   items: ItemGuardado[];
+  pagos: Pago[];
   trabajo: { id: number; estado: EstadoTrabajo; clienteId: number; cliente: string; busId: number | null; bus: string | null; placa: string | null };
   hermanos: Hermano[];
 }

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, sql, sum } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, notInArray, sql, sum } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { categoriaDeSeccion } from "../shared/categorias";
 import { calcularDesdePresupuestos, type Estadisticas, type FilaPresupuesto } from "../shared/estadisticas";
@@ -23,6 +23,8 @@ export async function obtenerEstadisticas(db: Db, filtro: { desde?: string | nul
   const enRango = and(
     desde ? gte(s.presupuestos.fecha, `${desde}-01-01`) : undefined,
     hasta ? lte(s.presupuestos.fecha, `${hasta}-12-31`) : undefined,
+    // Borradores (aún no cotizados) y cancelados no cuentan.
+    notInArray(s.presupuestos.estado, ["borrador", "cancelado"]),
   );
 
   const [aniosFilas, presupuestos, productos, precios, categorias, lineas] = await Promise.all([

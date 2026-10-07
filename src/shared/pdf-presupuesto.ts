@@ -29,6 +29,8 @@ export interface DocumentoTrabajo {
   numero: number;
   total: number;
   cerradoEn: number | null;
+  /** Los cancelados no salen en los resúmenes. */
+  estado?: string;
 }
 
 export interface DatosPdf {
@@ -64,7 +66,6 @@ const RENGLON = 14.5;
 const VERDE = rgb(0x8c / 255, 0xda / 255, 0x1f / 255);
 const NEGRO = rgb(0, 0, 0);
 const GRIS = rgb(0.35, 0.35, 0.35);
-const LINEA = rgb(0.75, 0.75, 0.75);
 
 async function incrustarLogo(doc: PDFDocument, dataUrl: string): Promise<PDFImage | null> {
   const m = dataUrl.match(/^data:image\/(png|jpeg);base64,(.+)$/);
@@ -77,7 +78,7 @@ async function incrustarLogo(doc: PDFDocument, dataUrl: string): Promise<PDFImag
   }
 }
 
-class Lienzo {
+export class Lienzo {
   pagina!: PDFPage;
   y = 0;
   paginas: PDFPage[] = [];
@@ -199,23 +200,24 @@ export function nombreArchivoPdf(d: Pick<DatosPdf, "cliente" | "fecha" | "tipo" 
   return `${base.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim()}.pdf`;
 }
 
-export async function generarPdf(d: DatosPdf): Promise<Uint8Array> {
+async function nuevoDocumento(titulo: string, a: Ajustes) {
   const doc = await PDFDocument.create();
-  doc.setTitle(nombreArchivoPdf(d).replace(/\.pdf$/, ""));
-  doc.setAuthor(d.ajustes.empresa || "Presupuestos");
+  doc.setTitle(titulo);
+  doc.setAuthor(a.empresa || "Presupuestos");
   doc.setCreator("reconstructora-presupuestos");
   const [normal, negrita] = await Promise.all([doc.embedFont(StandardFonts.Helvetica), doc.embedFont(StandardFonts.HelveticaBold)]);
-  const l = new Lienzo(doc, normal, negrita);
-  const a = d.ajustes;
+  return { doc, l: new Lienzo(doc, normal, negrita) };
+}
 
-  /* ───── Membrete ───── */
+/** Logo centrado, datos a la izquierda, contacto a la derecha y la línea verde (como el Excel). */
+async function membrete(doc: PDFDocument, l: Lienzo, a: Ajustes, d: { lugar: string | null; fecha: string | null; cliente: string; placa: string | null; bus: string | null }) {
   const logo = a.logo ? await incrustarLogo(doc, a.logo) : null;
   if (logo) {
-    const alto = 58;
-    const ancho = Math.min(240, (logo.width / logo.height) * alto);
+    const alto = 68;
+    const ancho = Math.min(280, (logo.width / logo.height) * alto);
     const altoReal = (logo.height / logo.width) * ancho;
-    l.pagina.drawImage(logo, { x: MARGEN, y: l.y - altoReal + 10, width: ancho, height: altoReal });
-    l.y -= altoReal + 10;
+    l.pagina.drawImage(logo, { x: (ANCHO - ancho) / 2, y: l.y - altoReal + 10, width: ancho, height: altoReal });
+    l.y -= altoReal + 12;
   }
 
   const placaBus = [d.placa, d.bus].filter(Boolean).join(" / ");
@@ -230,23 +232,28 @@ export async function generarPdf(d: DatosPdf): Promise<Uint8Array> {
   const derecha = [a.correo, a.empresa, a.telefono ? `Tel: ${a.telefono}` : ""].filter(Boolean);
   const yInicio = l.y;
   izquierda.forEach(([t, b]) => {
-    l.texto(t, MARGEN, { f: b ? negrita : normal, tam: 11 });
+    l.texto(t, MARGEN, { f: b ? l.negrita : l.normal, tam: 11 });
     l.y -= 14;
   });
   const yFin = l.y;
   l.y = yInicio;
   for (const t of derecha) {
-    l.texto(t, ANCHO - MARGEN, { f: negrita, tam: 10, alinear: "der" });
+    l.texto(t, ANCHO - MARGEN, { f: l.negrita, tam: 10, alinear: "der" });
     l.y -= 14;
   }
-  l.y = yFin - 4;
-  l.pagina.drawLine({ start: { x: MARGEN, y: l.y }, end: { x: ANCHO - MARGEN, y: l.y }, thickness: 0.8, color: LINEA });
+  l.y = yFin - 6;
+  l.pagina.drawLine({ start: { x: MARGEN - 6, y: l.y }, end: { x: ANCHO - MARGEN + 6, y: l.y }, thickness: 2.5, color: VERDE });
   l.y -= 12;
+}
 
-  /* ───── Líneas por sección ───── */
-  const padres = d.items.filter((i) => i.parentId === null).sort((x, y) => x.orden - y.orden || x.id - y.id);
+/**
+ * Secciones con sus líneas y TOTAL en verde. Devuelve los totales por sección.
+ * `etiquetaUnica`: si hay una sola sección, su TOTAL lleva ese nombre (p. ej. "TOTAL EXTRA 1").
+ */
+function cuerpo(l: Lienzo, items: ItemPdf[], etiquetaUnica?: string) {
+  const padres = items.filter((i) => i.parentId === null).sort((x, y) => x.orden - y.orden || x.id - y.id);
   const hijosDe = new Map<number, ItemPdf[]>();
-  for (const i of d.items) if (i.parentId !== null) hijosDe.set(i.parentId, [...(hijosDe.get(i.parentId) ?? []), i]);
+  for (const i of items) if (i.parentId !== null) hijosDe.set(i.parentId, [...(hijosDe.get(i.parentId) ?? []), i]);
 
   const secciones: { titulo: string | null; items: ItemPdf[] }[] = [];
   for (const p of padres) {
@@ -254,9 +261,8 @@ export async function generarPdf(d: DatosPdf): Promise<Uint8Array> {
     if (ult && ult.titulo === p.seccion) ult.items.push(p);
     else secciones.push({ titulo: p.seccion, items: [p] });
   }
-  if (d.tipo === "extra" && !secciones.some((s) => s.titulo && /extra/i.test(s.titulo))) l.titulo("EXTRAS");
 
-  const totalesSeccion: { titulo: string; total: number }[] = [];
+  const totales: { titulo: string; total: number }[] = [];
   for (const s of secciones) {
     if (s.titulo) l.titulo(s.titulo);
     let suma = 0;
@@ -268,8 +274,7 @@ export async function generarPdf(d: DatosPdf): Promise<Uint8Array> {
           l.lineaConPrecio(descripcionImpresa(h), precioImpreso(h), { xTexto: X_TEXTO + 12, guion: false });
           suma += h.precioPendiente ? 0 : (h.precio ?? 0);
         } else {
-          const renglones = l.partir(`• ${h.descripcion}`, normal, 9.5, X_PRECIO - X_TEXTO - 30);
-          for (const r of renglones) {
+          for (const r of l.partir(`• ${h.descripcion}`, l.normal, 9.5, X_PRECIO - X_TEXTO - 30)) {
             l.espacio(13);
             l.texto(r, X_TEXTO + 12, { tam: 9.5, color: GRIS });
             l.y -= 13;
@@ -277,53 +282,60 @@ export async function generarPdf(d: DatosPdf): Promise<Uint8Array> {
         }
       }
     }
-    if (secciones.length > 1 || s.titulo) {
-      l.lineaConPrecio("TOTAL", quetzales(suma), { f: negrita, guion: false, fondo: true });
-      totalesSeccion.push({ titulo: s.titulo ?? "", total: suma });
+    if (secciones.length > 1 || s.titulo || etiquetaUnica) {
+      l.lineaConPrecio(secciones.length === 1 && etiquetaUnica ? etiquetaUnica : "TOTAL", quetzales(suma), { f: l.negrita, guion: false, fondo: true });
+      totales.push({ titulo: s.titulo ?? "", total: suma });
     }
   }
+  return totales;
+}
 
-  /* ───── Resumen / total general ───── */
-  const conTitulo = totalesSeccion.filter((t) => t.titulo);
-  if (totalesSeccion.length > 1) {
+/** RESUMEN por sección (si hay varias) o un TOTAL general, y el "cerrado en". */
+function totalDocumento(l: Lienzo, totales: { titulo: string; total: number }[], total: number, cerradoEn: number | null, etiquetaTotal = "TOTAL") {
+  if (totales.length > 1) {
     l.titulo("RESUMEN");
     // Si una sección aparece dos veces (p. ej. ADENTRO otra vez en los extras), va sumada.
     const porTitulo = new Map<string, number>();
-    for (const t of totalesSeccion) porTitulo.set(t.titulo || "OTROS", (porTitulo.get(t.titulo || "OTROS") ?? 0) + t.total);
-    for (const [titulo, total] of porTitulo) l.lineaConPrecio(`TOTAL ${titulo}`, quetzales(total));
-    l.lineaConPrecio("TOTAL", quetzales(d.total), { f: negrita, guion: false, fondo: true });
-  } else if (!conTitulo.length) {
+    for (const t of totales) porTitulo.set(t.titulo || "OTROS", (porTitulo.get(t.titulo || "OTROS") ?? 0) + t.total);
+    for (const [titulo, monto] of porTitulo) l.lineaConPrecio(`TOTAL ${titulo}`, quetzales(monto));
+    l.lineaConPrecio(etiquetaTotal, quetzales(total), { f: l.negrita, guion: false, fondo: true });
+  } else if (!totales.length) {
     l.y -= 4;
-    l.lineaConPrecio("TOTAL", quetzales(d.total), { f: negrita, guion: false, fondo: true });
+    l.lineaConPrecio(etiquetaTotal, quetzales(total), { f: l.negrita, guion: false, fondo: true });
   }
-  if (d.cerradoEn !== null) {
+  if (cerradoEn !== null) {
     l.y -= 4;
-    l.lineaConPrecio("CERRADO EN", quetzales(d.cerradoEn), { f: negrita, guion: false, fondo: true });
+    l.lineaConPrecio("CERRADO EN", quetzales(cerradoEn), { f: l.negrita, guion: false, fondo: true });
   }
-  if (d.anticipo !== null) {
-    l.lineaConPrecio("ANTICIPO", quetzales(d.anticipo), { guion: false });
-    l.lineaConPrecio("SALDO", quetzales((d.cerradoEn ?? d.total) - d.anticipo), { f: negrita, guion: false });
-  }
+}
 
-  /* ───── Resumen del trabajo (en los extras) ───── */
-  const docs = [...d.documentosTrabajo].sort((x, y) => x.numero - y.numero);
-  if (d.tipo === "extra" && docs.length > 1) {
-    l.titulo("RESUMEN DEL TRABAJO");
-    for (const doc of docs) {
-      const nombre = doc.tipo === "original" ? "PRESUPUESTO ORIGINAL" : nombreDocumento(doc).toUpperCase();
-      l.lineaConPrecio(doc.cerradoEn !== null ? `${nombre} (cerrado en)` : nombre, quetzales(doc.cerradoEn ?? doc.total));
-    }
-    l.lineaConPrecio("TOTAL DEL TRABAJO", quetzales(montoTrabajo(docs).final), { f: negrita, guion: false, fondo: true });
+/** Original + extras con su total (o "cerrado en") y el total del trabajo. */
+function resumenTrabajo(l: Lienzo, docs: DocumentoTrabajo[]) {
+  const vigentes = docs.filter((d) => d.estado !== "cancelado").sort((x, y) => x.numero - y.numero);
+  l.titulo("RESUMEN DEL TRABAJO");
+  for (const doc of vigentes) {
+    const nombre = doc.tipo === "original" ? "PRESUPUESTO ORIGINAL" : nombreDocumento(doc).toUpperCase();
+    l.lineaConPrecio(doc.cerradoEn !== null ? `${nombre} (cerrado en)` : nombre, quetzales(doc.cerradoEn ?? doc.total));
   }
+  const total = montoTrabajo(vigentes).final;
+  l.lineaConPrecio("TOTAL DEL TRABAJO", quetzales(total), { f: l.negrita, guion: false, fondo: true });
+  return total;
+}
 
-  /* ───── Nota y firma ───── */
-  const nota = (d.notaPie ?? "").trim() || a.nota;
-  const renglonesNota = nota ? l.partir(nota, normal, 10, ANCHO - 2 * MARGEN - 40) : [];
-  // La nota y la firma pueden bajar hasta casi el borde para no dejar una hoja solo con ellas.
-  const pie = renglonesNota.length * 13 + (a.firma ? 14 : 0);
+function anticipoYSaldo(l: Lienzo, anticipo: number | null, monto: number) {
+  if (!anticipo) return;
+  l.lineaConPrecio("ANTICIPO", quetzales(anticipo), { guion: false });
+  l.lineaConPrecio("SALDO", quetzales(monto - anticipo), { f: l.negrita, guion: false });
+}
+
+/** Nota y firma al final; pueden bajar hasta casi el borde para no dejar una hoja solo con ellas. */
+function pie(l: Lienzo, a: Ajustes, notaPie: string | null) {
+  const nota = (notaPie ?? "").trim() || a.nota;
+  const renglonesNota = nota ? l.partir(nota, l.normal, 10, ANCHO - 2 * MARGEN - 40) : [];
+  const alto = renglonesNota.length * 13 + (a.firma ? 14 : 0);
   const PISO = 34;
-  if (l.y - 22 - pie >= PISO) l.y -= 22;
-  else if (l.y - 10 - pie >= PISO) l.y -= 10;
+  if (l.y - 22 - alto >= PISO) l.y -= 22;
+  else if (l.y - 10 - alto >= PISO) l.y -= 10;
   else {
     l.nuevaPagina();
     l.y -= 10;
@@ -332,14 +344,63 @@ export async function generarPdf(d: DatosPdf): Promise<Uint8Array> {
     l.texto(r, ANCHO / 2, { tam: 10, alinear: "centro" });
     l.y -= 13;
   }
-  if (a.firma) l.texto(a.firma, ANCHO / 2, { f: negrita, tam: 10.5, alinear: "centro" });
+  if (a.firma) l.texto(a.firma, ANCHO / 2, { f: l.negrita, tam: 10.5, alinear: "centro" });
 
-  /* ───── Números de página ───── */
   if (l.paginas.length > 1)
     l.paginas.forEach((p, i) => {
       const t = `Página ${i + 1} de ${l.paginas.length}`;
-      p.drawText(t, { x: ANCHO / 2 - normal.widthOfTextAtSize(t, 8) / 2, y: 24, size: 8, font: normal, color: GRIS });
+      p.drawText(t, { x: ANCHO / 2 - l.normal.widthOfTextAtSize(t, 8) / 2, y: 24, size: 8, font: l.normal, color: GRIS });
     });
+}
 
+/** PDF de UN presupuesto (original o extra). */
+export async function generarPdf(d: DatosPdf): Promise<Uint8Array> {
+  const { doc, l } = await nuevoDocumento(nombreArchivoPdf(d).replace(/\.pdf$/, ""), d.ajustes);
+  await membrete(doc, l, d.ajustes, d);
+  const secciones = d.items.filter((i) => i.parentId === null).map((i) => i.seccion);
+  if (d.tipo === "extra" && !secciones.some((s) => s && /extra/i.test(s))) l.titulo("EXTRAS");
+  totalDocumento(l, cuerpo(l, d.items), d.total, d.cerradoEn);
+  anticipoYSaldo(l, d.anticipo, d.cerradoEn ?? d.total);
+  if (d.tipo === "extra" && d.documentosTrabajo.filter((x) => x.estado !== "cancelado").length > 1) resumenTrabajo(l, d.documentosTrabajo);
+  pie(l, d.ajustes, d.notaPie);
   return doc.save();
+}
+
+export interface DatosPdfTrabajo {
+  ajustes: Ajustes;
+  cliente: string;
+  placa: string | null;
+  bus: string | null;
+  lugar: string | null;
+  /** Fecha del documento unificado (hoy). */
+  fecha: string;
+  documentos: (DocumentoTrabajo & { fecha: string | null; items: ItemPdf[] })[];
+  /** Suma de los abonos de todo el trabajo. */
+  abonado: number;
+}
+
+/** Documento unificado: original + Extra 1, 2, 3… (cada uno con sus secciones) y al final el resumen. */
+export async function generarPdfTrabajo(d: DatosPdfTrabajo): Promise<Uint8Array> {
+  const { doc, l } = await nuevoDocumento(nombreArchivoPdfTrabajo(d).replace(/\.pdf$/, ""), d.ajustes);
+  await membrete(doc, l, d.ajustes, d);
+  const docs = d.documentos.filter((x) => x.estado !== "cancelado").sort((x, y) => x.numero - y.numero);
+  for (const [i, x] of docs.entries()) {
+    const nombre = x.tipo === "original" ? "PRESUPUESTO ORIGINAL" : nombreDocumento(x).toUpperCase();
+    // Encabezado de cada documento: barra gris con el nombre y la fecha.
+    l.espacio(RENGLON * 4);
+    l.y -= i === 0 ? 18 : 14;
+    l.pagina.drawRectangle({ x: MARGEN - 6, y: l.y - 5, width: ANCHO - 2 * MARGEN + 12, height: 19, color: rgb(0.93, 0.95, 0.97) });
+    l.texto(nombre, MARGEN, { f: l.negrita, tam: 11.5 });
+    if (x.fecha) l.texto(lugarYFecha(null, x.fecha).replace(/\.$/, ""), ANCHO - MARGEN, { tam: 10, alinear: "der", color: GRIS });
+    l.y -= RENGLON + 6;
+    totalDocumento(l, cuerpo(l, x.items, `TOTAL ${nombre}`), x.total, x.cerradoEn, `TOTAL ${nombre}`);
+  }
+  const total = resumenTrabajo(l, docs);
+  anticipoYSaldo(l, d.abonado || null, total);
+  pie(l, d.ajustes, null);
+  return doc.save();
+}
+
+export function nombreArchivoPdfTrabajo(d: Pick<DatosPdfTrabajo, "cliente" | "fecha">): string {
+  return `${`Trabajo completo ${d.cliente} ${d.fecha}`.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim()}.pdf`;
 }

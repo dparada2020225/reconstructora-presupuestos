@@ -4,8 +4,10 @@ import { Link, useBlocker, useNavigate } from "react-router";
 import { CATEGORIAS } from "../../shared/categorias";
 import { montoTrabajo } from "../../shared/estadisticas";
 import { nombreDocumento, type Ajustes } from "../../shared/presupuesto";
-import { api, enviar, type EstadoPresupuesto, type Hermano, type ProductoFila } from "../api";
-import { Aviso, Boton, Caja, Campo, claseInput, ComboBusqueda, Confirmar, ESTADO_TRABAJO, fechaCorta, formatoQ, Insignia } from "../components/ui";
+import { api, enviar, type EstadoPresupuesto, type Hermano, type Pago, type ProductoFila } from "../api";
+import { Aviso, Boton, Caja, Campo, claseInput, ComboBusqueda, Confirmar, ESTADO_PRESUPUESTO, ESTADO_TRABAJO, fechaCorta, formatoQ, Insignia } from "../components/ui";
+import { DocumentoUnificado } from "../pdf/AccionesPdf";
+import { EstadoPagos } from "./EstadoPagos";
 import { NuevoBus, nombreBus, useOpcionesClientes } from "../pages/Buses";
 import { NuevoCliente } from "../pages/Clientes";
 import type { BusFila } from "../api";
@@ -33,12 +35,8 @@ export interface ContextoEditor {
   estado: EstadoPresupuesto;
   trabajo: { id: number; estado: keyof typeof ESTADO_TRABAJO; cliente: string; clienteId: number; bus: string | null; placa: string | null; busId: number | null } | null;
   hermanos: Hermano[];
+  pagos: Pago[];
 }
-
-const ESTADO_PRES: Record<EstadoPresupuesto, { texto: string; clase: string }> = {
-  borrador: { texto: "Borrador", clase: "bg-amber-100 text-amber-900" },
-  listo: { texto: "Listo", clase: "bg-emerald-100 text-emerald-900" },
-};
 
 const botonIcono = "rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent";
 
@@ -116,17 +114,6 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
     return () => window.removeEventListener("keydown", atajo);
   });
 
-  const estado = useMutation({
-    mutationFn: async (nuevo: EstadoPresupuesto) => {
-      const id = await guardarAntes();
-      if (!id) throw new Error("Revisa el presupuesto antes de cambiar el estado");
-      await enviar("PATCH", `/presupuestos/${id}/estado`, { estado: nuevo });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["presupuesto"] });
-      qc.invalidateQueries({ queryKey: ["presupuestos"] });
-    },
-  });
   const quitar = useMutation({
     mutationFn: () => enviar("DELETE", `/presupuestos/${ctx.id}`),
     onSuccess: () => {
@@ -172,7 +159,7 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
   const usadas = new Set(e.secciones.map((s) => s.titulo.trim().toUpperCase()));
   const total = totalEditor(e);
   const cerrado = aNumero(e.cerradoEn);
-  const anticipo = aNumero(e.anticipo);
+  const abonado = ctx.pagos.reduce((a, p) => a + p.monto, 0);
 
   const titulo = ctx.id
     ? `${ctx.trabajo?.cliente ?? "Presupuesto"} · ${nombreDocumento(ctx)}`
@@ -190,7 +177,7 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight break-words">{titulo}</h1>
-            {ctx.id && <Insignia clase={ESTADO_PRES[ctx.estado].clase}>{ESTADO_PRES[ctx.estado].texto}</Insignia>}
+            {ctx.id && <Insignia clase={ESTADO_PRESUPUESTO[ctx.estado].clase}>{ESTADO_PRESUPUESTO[ctx.estado].texto}</Insignia>}
             <span className={`text-sm ${sucio ? "text-amber-700" : "text-slate-500"}`} aria-live="polite">
               {guardar.isPending ? "Guardando…" : sucio ? "● Cambios sin guardar" : ctx.id ? "Guardado" : ""}
             </span>
@@ -479,54 +466,50 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
                 <dd className="text-2xl font-semibold tabular-nums">{formatoQ(total)}</dd>
               </div>
             </dl>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <Campo etiqueta="Cerrado en">
+            <div className="mt-3">
+              <Campo etiqueta="Cerrado en" ayuda="El precio que se negoció, si fue distinto del total.">
                 <input inputMode="decimal" className={`${claseInput} text-right tabular-nums`} placeholder="—" value={e.cerradoEn} onChange={(ev) => mutar((d) => void (d.cerradoEn = ev.target.value))} />
               </Campo>
-              <Campo etiqueta="Anticipo">
-                <input inputMode="decimal" className={`${claseInput} text-right tabular-nums`} placeholder="—" value={e.anticipo} onChange={(ev) => mutar((d) => void (d.anticipo = ev.target.value))} />
-              </Campo>
             </div>
-            {(cerrado !== null || anticipo !== null) && (
-              <p className="mt-2 flex justify-between text-sm">
-                <span className="text-slate-600">Saldo</span>
-                <span className="font-medium tabular-nums">{formatoQ((cerrado ?? total) - (anticipo ?? 0))}</span>
-              </p>
+            {abonado > 0 && (
+              <dl className="mt-2 space-y-0.5 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-slate-600">Anticipo (abonos)</dt>
+                  <dd className="tabular-nums">{formatoQ(abonado)}</dd>
+                </div>
+                <div className="flex justify-between font-medium">
+                  <dt>Saldo</dt>
+                  <dd className="tabular-nums">{formatoQ((cerrado ?? total) - abonado)}</dd>
+                </div>
+              </dl>
             )}
           </Caja>
 
-          {ctx.trabajoId && <ResumenTrabajo ctx={ctx} totalActual={total} cerradoActual={cerrado} />}
+          {ctx.id ? (
+            <EstadoPagos id={ctx.id} estado={ctx.estado} pagos={ctx.pagos} monto={cerrado ?? total} guardarAntes={guardarAntes} />
+          ) : (
+            <Caja titulo="Estado y abonos">
+              <p className="text-sm text-slate-500">Guarda el presupuesto para cambiar su estado y registrar abonos.</p>
+            </Caja>
+          )}
+
+          {ctx.trabajoId && <ResumenTrabajo ctx={ctx} totalActual={total} cerradoActual={cerrado} guardarAntes={guardarAntes} />}
 
           {ctx.id && (
-            <Caja titulo="Estado">
-              <div className="flex flex-wrap gap-2">
-                {ctx.estado === "borrador" ? (
-                  <Boton variante="primario" disabled={estado.isPending || !puedeGuardar} onClick={() => estado.mutate("listo")}>
-                    Marcar como listo
-                  </Boton>
-                ) : (
-                  <Boton disabled={estado.isPending} onClick={() => estado.mutate("borrador")}>
-                    Volver a borrador
-                  </Boton>
-                )}
-                {ctx.estado === "borrador" && (
-                  <Boton variante="peligro" onClick={() => (quitar.reset(), setBorrar(true))}>
-                    Borrar
-                  </Boton>
-                )}
-              </div>
-              {estado.error && <div className="mt-2"><Aviso>{estado.error.message}</Aviso></div>}
-              <p className="mt-2 text-xs text-slate-500">
-                {ctx.estado === "borrador" ? "Cuando esté revisado, márcalo como listo y descarga el PDF." : "Si lo cambias, vuelve a descargar el PDF."}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+            <Caja titulo="Más">
+              <div className="flex flex-col items-start gap-2">
                 <Link className="text-sm text-marca-700 hover:underline" to={`/presupuestos/nuevo?base=${ctx.id}`}>
-                  Usar como base para otro
+                  Usar como base para otro presupuesto
                 </Link>
                 {ctx.trabajoId && (
                   <Link className="text-sm text-marca-700 hover:underline" to={`/presupuestos/nuevo?trabajo=${ctx.trabajoId}`}>
-                    Agregar extra
+                    Agregar extra a este trabajo
                   </Link>
+                )}
+                {ctx.estado === "borrador" && (
+                  <Boton variante="peligro" onClick={() => (quitar.reset(), setBorrar(true))}>
+                    Borrar borrador
+                  </Boton>
                 )}
               </div>
             </Caja>
@@ -580,8 +563,19 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
 }
 
 /** Original + extras del trabajo, con el total que se está editando en vivo. */
-function ResumenTrabajo({ ctx, totalActual, cerradoActual }: { ctx: ContextoEditor; totalActual: number; cerradoActual: number | null }) {
-  const docs = [...ctx.hermanos.filter((h) => h.id !== ctx.id)];
+function ResumenTrabajo({
+  ctx,
+  totalActual,
+  cerradoActual,
+  guardarAntes,
+}: {
+  ctx: ContextoEditor;
+  totalActual: number;
+  cerradoActual: number | null;
+  guardarAntes: () => Promise<number | null>;
+}) {
+  // Los cancelados no cuentan en el total del trabajo.
+  const docs = [...ctx.hermanos.filter((h) => h.id !== ctx.id && h.estado !== "cancelado")];
   const actual = { id: ctx.id ?? -1, tipo: ctx.tipo, numero: ctx.id ? ctx.numero : Math.max(0, ...ctx.hermanos.map((h) => h.numero)) + 1, total: totalActual, cerradoEn: cerradoActual, fecha: null };
   const todos = [...docs, actual].sort((a, b) => a.numero - b.numero);
   const m = montoTrabajo(todos);
@@ -608,6 +602,11 @@ function ResumenTrabajo({ ctx, totalActual, cerradoActual }: { ctx: ContextoEdit
         <span>Total del trabajo</span>
         <span className="tabular-nums">{formatoQ(m.final)}</span>
       </p>
+      {ctx.id && ctx.trabajoId && todos.length > 1 && (
+        <div className="mt-3">
+          <DocumentoUnificado trabajoId={ctx.trabajoId} guardarAntes={guardarAntes} />
+        </div>
+      )}
     </Caja>
   );
 }

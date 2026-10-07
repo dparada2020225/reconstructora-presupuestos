@@ -176,21 +176,23 @@ export async function cargarHistorico(db: Db, h: Historico, progreso: Progreso =
     }
 
     /* 6. Presupuestos. */
-    const presupuestos = h.trabajos.flatMap((t, i) => t.presupuestos.map((p) => ({ p, trabajoId: idsTrabajo[i] })));
+    const presupuestos = h.trabajos.flatMap((t, i) =>
+      t.presupuestos.map((p) => ({ p, trabajoId: idsTrabajo[i], estado: t.estado === "no_concretado" ? ("cancelado" as const) : ("terminado" as const) })),
+    );
     progreso(`Presupuestos (${presupuestos.length})…`);
     const idsPresupuesto: number[] = [];
     for (const grupo of bloques(presupuestos, 1000)) {
       const filas = await tx
         .insert(s.presupuestos)
         .values(
-          grupo.map(({ p, trabajoId }) => ({
+          grupo.map(({ p, trabajoId, estado }) => ({
             trabajoId,
             tipo: p.tipo,
             numero: p.numero,
             titulo: p.titulo,
             fecha: p.fecha,
             lugar: p.lugar,
-            estado: "listo" as const,
+            estado,
             total: money(p.total),
             cerradoEn: money(p.cerradoEn),
             anticipo: money(p.anticipo),
@@ -201,6 +203,13 @@ export async function cargarHistorico(db: Db, h: Historico, progreso: Progreso =
         .returning({ id: s.presupuestos.id });
       idsPresupuesto.push(...filas.map((f) => f.id));
     }
+
+    /* 6b. El anticipo anotado en el Excel queda como un abono (sin forma de pago conocida). */
+    const abonos = presupuestos
+      .map(({ p }, i) => ({ p, id: idsPresupuesto[i] }))
+      .filter(({ p }) => (p.anticipo ?? 0) > 0)
+      .map(({ p, id }) => ({ presupuestoId: id, fecha: p.fecha ?? "2000-01-01", monto: money(p.anticipo)!, forma: null, nota: "Anticipo anotado en el presupuesto" }));
+    for (const grupo of bloques(abonos, 2000)) await tx.insert(s.pagos).values(grupo);
 
     /* 7. Items: primero los de arriba, después sus sub-items. */
     const fila = (it: Omit<ItemFinal, "hijos">, orden: number, presupuestoId: number, parentId: number | null) => ({

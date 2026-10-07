@@ -36,7 +36,6 @@ export interface EditorEstado {
   fecha: string;
   lugar: string;
   cerradoEn: string;
-  anticipo: string;
   notas: string;
   notaPie: string;
   secciones: SeccionEd[];
@@ -94,7 +93,6 @@ export function aEntrada(e: EditorEstado, extra: { trabajoId?: number | null }):
     fecha: e.fecha,
     lugar: e.lugar.trim() || null,
     cerradoEn: aNumero(e.cerradoEn),
-    anticipo: aNumero(e.anticipo),
     notas: e.notas.trim() || null,
     notaPie: e.notaPie.trim() || null,
     lineas: e.secciones.flatMap((s) => s.lineas.filter(lineaUsada).map((l) => lineaAEntrada(l, s.titulo))),
