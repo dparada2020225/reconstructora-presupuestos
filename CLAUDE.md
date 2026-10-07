@@ -26,6 +26,13 @@ efectivo/cheque/transferencia) son del **trabajo completo** (original + extras),
 editan y borran desde cualquier presupuesto del trabajo o desde /trabajos/:id, se comparan contra
 el total del trabajo (aro con %) y **no salen en el PDF**. Todo el histórico entra como `terminado`.
 
+## Documentación
+
+`README.md` (resumen y comandos) + `docs/`: MANUAL.md (para quien usa la app), DESPLIEGUE.md,
+OPERACION.md (rutina, copias, llaves, solución de problemas), ARQUITECTURA.md, API.md,
+BASE-DE-DATOS.md, ETL.md, DESARROLLO.md (reglas, recetas, trampas), PLAN.md. **Al cambiar algo,
+actualizar la doc que corresponda** (endpoints → API.md, tablas → BASE-DE-DATOS.md, pantallas → MANUAL.md).
+
 ## Reglas que no se rompen
 
 1. **El repo es público. Nunca se suben datos del negocio**: ni Excel, ni CSV, ni
@@ -71,7 +78,8 @@ scripts/
   etl/         Migración de los Excel históricos (ver abajo)
   seed-usuarios.ts, check-privacidad.mjs
 drizzle/       Migraciones SQL generadas (sí se suben)
-docs/          PLAN.md (fases), DESPLIEGUE.md (cuentas y deploy)
+docs/          MANUAL (uso), DESPLIEGUE (cuentas, desde cero), OPERACION (día a día, problemas),
+               ARQUITECTURA, API, BASE-DE-DATOS, ETL, DESARROLLO, PLAN
 ```
 
 ## Comandos

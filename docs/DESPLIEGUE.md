@@ -1,111 +1,120 @@
 # Cuentas, configuración y despliegue
 
-Todo con planes gratis. Los valores secretos van en `.env` / `.dev.vars` (locales)
-y en los secretos del Worker; nunca en el repo.
+Cómo montar todo **desde cero** (o rehacerlo). Todo con planes gratis. Los secretos van en
+`.env` / `.dev.vars` (locales, ignorados) y en los secretos del Worker; **nunca en el repo**.
+El día a día (publicar, copias, problemas) está en [OPERACION.md](OPERACION.md).
+
+Orden recomendado: Neon → Cloudflare Workers → Cloudflare Access → login con Google (opcional) →
+Google Sheets → membrete.
 
 ## 1. Neon (Postgres)
 
-1. Crear cuenta en https://neon.com (con GitHub o Google) y un proyecto
-   `reconstructora-presupuestos` (región AWS us-east-1 o la más cercana).
-2. Crear una rama `dev` además de `main`.
-3. Copiar el *connection string* de cada rama (botón **Connect**, con `sslmode=require`).
-   - `main` → secreto `DATABASE_URL` del Worker y `.env` cuando cargues datos reales.
-   - `dev` → `.dev.vars` y `.env` para desarrollar.
-4. `npm run db:migrate` (con la URL correspondiente en `.env`) para crear las tablas.
-5. `npm run db:seed-usuarios` con `SEED_USUARIOS` en `.env` (solo tu correo como admin).
+1. Crear cuenta en <https://neon.com> y un proyecto `reconstructora-presupuestos` (región más cercana).
+2. Dos ramas: **`production`** (la de la app publicada; es la principal) y **`dev`** (para trabajar en
+   local; sin auto-borrado).
+3. Copiar el *connection string* de cada rama (botón **Connect**, sin pooling, con `sslmode=require`).
+   - `dev` → `.env` y `.dev.vars`.
+   - `production` → **no** se guarda en archivos: los scripts que la necesitan la piden al correr.
+4. En local: `npm run db:migrate` y `npm run db:seed-usuarios` (con `SEED_USUARIOS` = tu correo como admin).
 
-## 2. Cloudflare Workers (hosting + deploy automático)
+## 2. Cloudflare Workers (hosting y deploy automático)
 
-1. Crear cuenta en https://dash.cloudflare.com.
-2. **Workers & Pages → Create → Import a repository** → elegir
-   `reconstructora-presupuestos`.
+1. Crear cuenta en <https://dash.cloudflare.com>.
+2. **Workers & Pages → Create → Import a repository** → el repo `reconstructora-presupuestos`.
    - Build command: `npm run build`
    - Deploy command: `npx wrangler deploy`
    - Rama de producción: `main`
-3. En el Worker → **Settings → Variables and Secrets** agregar como *Secret*:
-   `DATABASE_URL`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` (y luego los de Google).
-4. Desde ahí, cada `git push` a `main` construye y despliega solo.
+3. Primera configuración de production (desde tu compu, con wrangler logueado):
+   ```bash
+   npm run configurar:produccion   # pide la URL de production: migra, siembra al admin y guarda DATABASE_URL como secreto
+   ```
+4. Desde ahí, cada `git push` a `main` construye y publica solo (`*.workers.dev`).
+
+Nombre del Worker y configuración: `wrangler.jsonc` (assets del SPA con
+`not_found_handling: single-page-application` y `run_worker_first: ["/api/*"]`).
 
 ## 3. Cloudflare Access (login)
 
-1. **Zero Trust** (plan Free, hasta 50 usuarios). El equipo queda como
-   `<equipo>.cloudflareaccess.com` → `ACCESS_TEAM_DOMAIN`.
-2. **Zero Trust → Access controls → Policies → Add a policy**: Allow, *Include → Everyone*,
-   sesión 1 mes. Access solo identifica el correo; quién entra lo decide la app (tabla `usuarios`).
-3. **Workers → reconstructora-presupuestos → Access → Protect this Worker**: scope *All traffic*
-   y la política del paso 2.
-4. Login: "One-time PIN" (código al correo) viene activo; Google es opcional.
-5. Copiar **AUD tag** y dominio del equipo a `vars` en `wrangler.jsonc` (no son secretos).
-6. Sembrar solo al admin (`npm run db:seed-usuarios`). Los demás entran, quedan
-   pendientes y el admin los autoriza en la página **Usuarios**.
+1. **Zero Trust** (plan Free, hasta 50 usuarios). El equipo queda como `<equipo>.cloudflareaccess.com`.
+2. **Access controls → Policies → Add a policy**: *Allow*, **Include → Everyone**, sesión de 1 mes
+   (nombre sugerido: "Cualquier correo verificado (la app autoriza)"). Access solo **identifica**;
+   quién entra lo decide la app (tabla `usuarios`).
+3. En el dashboard: **Workers → reconstructora-presupuestos → Access → Protect this Worker**: alcance
+   *All traffic*, con la política del paso 2.
+4. Métodos de login: *One-time PIN* (código al correo) viene activo. Google se agrega en el paso 4.
+5. Copiar el **dominio del equipo** y el **AUD tag** de la aplicación de Access a `vars` en
+   `wrangler.jsonc` (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`). No son secretos; van en el archivo porque
+   `wrangler deploy` borra las variables de texto creadas en el dashboard.
+6. Los demás usuarios entran, quedan **pendientes** y el admin los autoriza en la página *Usuarios*.
 
-## Google Sheets (respaldo, fase 5)
+## 4. Login con Google (opcional, recomendado)
 
-Cada presupuesto de la app que deja de ser borrador se copia a una pestaña de UN archivo de
-Sheets en el Drive del admin, duplicando la pestaña **FORMATO** (el formato de siempre). Se
-actualiza solo al guardar o cambiar de estado; si Google falla, el presupuesto queda guardado y
-aparece como pendiente (Ajustes → "Copiar pendientes").
+1. <https://console.cloud.google.com> → proyecto `reconstructora-presupuestos`.
+2. **APIs y servicios → Pantalla de consentimiento de OAuth**: tipo *Externo*, nombre de la app,
+   correo de soporte. **Publicar la app** (si queda "en prueba", solo entran los correos de prueba).
+3. **Credenciales → Crear credenciales → ID de cliente de OAuth** → *Aplicación web*
+   (nombre sugerido: "Cloudflare Access"). URI de redirección:
+   `https://<equipo>.cloudflareaccess.com/cdn-cgi/access/callback`.
+4. En **Zero Trust → Settings → Authentication → Login methods → Add → Google**: pegar el ID y el
+   secreto del cliente (el secreto lo pega el dueño; no se guarda en ningún archivo del repo).
+5. Probar con *Test*.
 
-1. **API:** <https://console.cloud.google.com> → proyecto `reconstructora-presupuestos` →
-   *APIs y servicios → Biblioteca* → **Google Sheets API** → *Habilitar*.
-2. **Cuenta de servicio:** *IAM y administración → Cuentas de servicio → Crear cuenta de servicio*
-   (nombre: `respaldo-presupuestos`, sin roles). Entrar a la cuenta → *Claves → Agregar clave →
-   Crear clave nueva → JSON*. Se descarga un `.json`: guardarlo **fuera del repo** (p. ej. en la
-   carpeta `presupuestos`). Es la llave; no se comparte ni se sube.
-3. **Archivo de respaldo:** en Drive crear una hoja de cálculo nueva (p. ej. "Respaldo presupuestos").
-   Desde el Sheets de siempre, clic derecho en la pestaña **FORMATO → Copiar en → Hoja de cálculo
-   existente** → la nueva. En la nueva, renombrar la pestaña copiada a `FORMATO` (quitar "Copia de").
-4. **Compartir** el archivo nuevo (botón *Compartir*) con el correo de la cuenta de servicio
-   (`…@….iam.gserviceaccount.com`, está en el `.json`) como **Editor**.
-5. `npm run configurar:google`: pide la ruta del `.json` (se puede arrastrar a la terminal) y el link
-   del archivo; escribe `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` y `SHEETS_RESPALDO_ID` en
-   `.dev.vars` y los guarda como secretos del Worker.
+## 5. Google Sheets (respaldo de cada presupuesto)
+
+Cada presupuesto de la app que deja de ser borrador se copia a una pestaña de **un** archivo de
+Sheets en el Drive del admin, duplicando la pestaña **FORMATO** (el formato del Excel).
+
+1. **API**: Google Cloud → proyecto `reconstructora-presupuestos` → *APIs y servicios → Biblioteca* →
+   **Google Sheets API** → *Habilitar*.
+2. **Cuenta de servicio**: *IAM y administración → Cuentas de servicio → Crear cuenta de servicio*
+   (nombre `respaldo-presupuestos`, **sin roles**). Entrar a la cuenta → *Claves → Agregar clave →
+   Crear clave nueva → JSON*. Se descarga un `.json`: es la **llave**. Guardarlo **fuera del repo**
+   (p. ej. en la carpeta padre); no se comparte ni se sube.
+3. **Archivo de respaldo**: en Drive, hoja de cálculo nueva ("Respaldo presupuestos"). Desde el Excel
+   de siempre abierto en Sheets: clic derecho en la pestaña **FORMATO → Copiar en → Hoja de cálculo
+   ya creada** → la nueva. En la nueva, renombrar la pestaña a `FORMATO` (quitar "Copia de").
+4. **Compartir** el archivo con el correo de la cuenta de servicio
+   (`respaldo-presupuestos@<proyecto>.iam.gserviceaccount.com`, también está en el `.json`) como
+   **Editor**, sin notificar.
+5. En la compu, dentro del repo:
+   ```bash
+   npm run configurar:google
+   ```
+   Pide la ruta del `.json` (se puede arrastrar a la terminal) y el link del archivo. Escribe
+   `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` y `SHEETS_RESPALDO_ID` en `.dev.vars` y los
+   guarda como secretos del Worker (si wrangler no está logueado, abre el navegador para autorizarlo).
 6. En la app: **Ajustes → Respaldo en Google Sheets → Copiar pendientes**.
 
 La pestaña FORMATO se lee para ubicar las filas ("Lugar y fecha:", "Cliente:", "No. Placa", la
-primera línea con "-", el TOTAL y la NOTA), así que puede tener filas de más arriba sin problema.
+primera línea con `-`, el TOTAL y la NOTA); puede tener filas de más arriba (logo) sin problema.
+Las cuentas de servicio no tienen espacio propio en Drive: por eso se escribe en un archivo que es
+del admin y no se crean archivos nuevos.
 
-## Copia de toda la base
+## 6. Membrete del PDF (una vez por base)
 
-- **Desde la app** (admin): Ajustes → *Copia de toda la base* → **Descargar copia (.json)**. Inicio avisa si
-  pasaron más de 30 días sin bajar una. Guardar el archivo fuera del repo (tiene datos del negocio).
-- **Desde la terminal:** `npm run db:copia` (base de `.env`) o `npm run db:copia:produccion` (pide la URL).
-  Quedan en `../copias` (o `COPIAS_DIR`); el script se niega a escribir dentro del repo.
-- **Restaurar:** `npm run db:restaurar -- <archivo.json>` (a la base de `.env`) o con `--produccion`.
-  Pide escribir `RESTAURAR`, borra todo lo que hay y pone lo de la copia, en una transacción (si falla, no
-  cambia nada). La base destino necesita las mismas migraciones que la copia: si no, primero `db:migrate`.
-  Para probar una copia sin tocar nada, restaurarla en una rama nueva de Neon.
+Entrar como admin → **Ajustes**: empresa, correo, teléfono, firma, lugar por defecto, nota al pie,
+**logo** e **íconos de redes** (una imagen junto a la empresa y otra junto al teléfono). Se guarda
+en la tabla `configuracion` **de esa base**: hay que hacerlo en production y, si se quiere ver igual
+en local, también en dev.
 
-## Desarrollo local
+## 7. Histórico
 
-```bash
-npm install
-cp .env.example .env            # y llenar
-cp .dev.vars.example .dev.vars  # y llenar
-npm run db:migrate
-npm run dev
-```
+Cargar los Excel viejos a production **una sola vez, antes de empezar a usar la app**:
+`npm run etl:parse` → revisar `revision.md` → `npm run etl:load:produccion`. Detalle y advertencias
+en [ETL.md](ETL.md).
 
-## Cambios que agregan tablas o columnas
+## Inventario: qué vive dónde
 
-Cuando un commit trae una migración nueva en `drizzle/`:
-
-```bash
-npm run db:migrate              # rama dev (la de .env)
-npm run db:migrate:produccion   # pide la URL de production y la migra
-git push                        # recién entonces: Workers Builds publica el código nuevo
-```
-
-Si se hace push antes de migrar producción, las partes nuevas fallan hasta que se migre.
-
-## Ojo con `etl:load` en producción
-
-`etl:load` borra y vuelve a crear todo lo que vino del histórico (trabajos, presupuestos y
-buses sin uso). Clientes y productos se reconocen por alias, así que las uniones hechas en la
-app se respetan, pero cambios a trabajos o buses del histórico se perderían. Una vez que se
-empieza a editar en la app, **no volver a correr `etl:load:produccion`**.
-
-## Membrete del PDF (una vez por base)
-
-Entrar como admin → **Ajustes** y llenar empresa, correo, teléfono, firma, lugar por defecto y subir el
-logo. Se guarda en la tabla `configuracion` de esa base (hay que hacerlo en dev y en production).
+| Qué | Dónde |
+|---|---|
+| Código, migraciones, documentación | GitHub (repo público) |
+| App publicada | Cloudflare Workers (`*.workers.dev`) |
+| Login | Cloudflare Zero Trust (Access) + Google OAuth |
+| Datos | Neon (`production`, `dev`) |
+| Respaldo por presupuesto | Google Sheets "Respaldo presupuestos" (Drive del admin) |
+| Copias de toda la base | Compu / Drive del admin (fuera del repo) |
+| Secretos de production | Secretos del Worker (`DATABASE_URL`, `GOOGLE_*`, `SHEETS_RESPALDO_ID`) |
+| Secretos de local | `.env`, `.dev.vars` |
+| Llave JSON de la cuenta de servicio | Compu del admin, fuera del repo |
+| Excel históricos, `overrides.json`, `historico.json` | Carpeta padre del repo / `../_etl` |
+| Membrete, logo e íconos | Tabla `configuracion` de cada base |

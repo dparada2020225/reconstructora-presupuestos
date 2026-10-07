@@ -1,5 +1,7 @@
 # Plan por fases
 
+> Todas las fases están hechas. Este archivo queda como registro de qué se planeó y en qué orden.
+
 Objetivo: que armar un presupuesto tome minutos en vez de copiar y editar una
 pestaña de Excel, que salga el PDF listo para pasárselo al jefe, que quede respaldo en
 Google Sheets con el formato de siempre y que haya estadísticas de todo el histórico.
@@ -14,13 +16,13 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
   Todos los autorizados tienen los mismos permisos.
 - `/api/health` (público), `/api/me`, `/api/usuarios` (admin).
 
-## Fase 1 — Modelo de datos + migración del histórico ✅ (falta correr contra Neon)
+## Fase 1 — Modelo de datos + migración del histórico ✅
 - Esquema: usuarios, clientes (+alias), buses, productos (+alias), trabajos,
   presupuestos (original/extra), items (con sub-items).
 - ETL: lee los dos Excel, valida totales, une pestañas partidas, detecta extras y
   versiones repetidas, arma catálogo de productos, genera `revision.md` y `estadisticas.md`.
 - Correcciones manuales vía `overrides.json` y volver a correr.
-- **Pendiente:** revisar `revision.md` con quien conoce los trabajos, ajustar overrides, cargar a Neon.
+- Detalle en [ETL.md](ETL.md). Pendiente: cargar el histórico revisado a production (una sola vez).
 
 ## Fase 2 — Estadísticas ✅
 - Totales: clientes, buses, trabajos, presupuestos, monto cotizado y cerrado.
@@ -44,9 +46,11 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 - Sin límite de filas; totales por sección y total final automáticos.
 - Extras: abrir un trabajo y agregar "Extra N" (ve lo anterior y el resumen).
 - Duplicar un presupuesto viejo como base.
-- Estados: borrador → listo (al generar el PDF). La revisión del jefe y el envío al
-  cliente siguen fuera de la app.
-- Estado del trabajo: cotizado / en curso / terminado / no concretado.
+- Estados por presupuesto: borrador, cotización, en curso, terminado, cancelado (al principio eran
+  solo borrador → listo). La revisión del jefe y el envío al cliente siguen fuera de la app.
+- Estado del trabajo (cotizado / en curso / terminado / no concretado): se calcula de sus presupuestos.
+- Anticipo por presupuesto (sale en el PDF) y abonos por trabajo con forma de pago (no salen en el PDF).
+- Documento unificado del trabajo (original + extras + resumen).
 - **PDF** con el formato de la plantilla (logo, encabezado, nota, firma), listo para pasar por WhatsApp/correo.
 
 ## Fase 5 — Respaldo en Google Sheets ✅
