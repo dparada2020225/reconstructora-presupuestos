@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import type { Ajustes as TAjustes } from "../../shared/presupuesto";
+import { IMAGENES_AJUSTES, type Ajustes as TAjustes } from "../../shared/presupuesto";
 import { api, enviar, type Usuario } from "../api";
 import { Aviso, Boton, Caja, Campo, claseInput, Encabezado } from "../components/ui";
 
-/** Achica la imagen (máx. 800 px de ancho) y la devuelve como PNG en data URL. */
-async function logoComoDataUrl(archivo: File): Promise<string> {
+/** Achica la imagen (máx. `maxAncho` px de ancho) y la devuelve como PNG en data URL. */
+async function imagenComoDataUrl(archivo: File, maxAncho: number): Promise<string> {
   const url = URL.createObjectURL(archivo);
   try {
     const img = await new Promise<HTMLImageElement>((ok, mal) => {
@@ -14,7 +14,7 @@ async function logoComoDataUrl(archivo: File): Promise<string> {
       i.onerror = () => mal(new Error("No se pudo leer la imagen"));
       i.src = url;
     });
-    const escala = Math.min(1, 800 / img.naturalWidth);
+    const escala = Math.min(1, maxAncho / img.naturalWidth);
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(img.naturalWidth * escala);
     canvas.height = Math.round(img.naturalHeight * escala);
@@ -25,7 +25,7 @@ async function logoComoDataUrl(archivo: File): Promise<string> {
   }
 }
 
-const CAMPOS: { clave: Exclude<keyof TAjustes, "logo">; etiqueta: string; ayuda?: string; largo?: boolean }[] = [
+const CAMPOS: { clave: Exclude<keyof TAjustes, (typeof IMAGENES_AJUSTES)[number]>; etiqueta: string; ayuda?: string; largo?: boolean }[] = [
   { clave: "empresa", etiqueta: "Nombre de la empresa" },
   { clave: "correo", etiqueta: "Correo" },
   { clave: "telefono", etiqueta: "Teléfono" },
@@ -115,9 +115,52 @@ function RespaldoAjustes() {
   );
 }
 
+/** Vista previa + subir / cambiar / quitar una imagen del membrete. */
+function CampoImagen({ valor, maxAncho, alt, altoVista, onChange }: { valor: string; maxAncho: number; alt: string; altoVista: string; onChange: (v: string) => void }) {
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div>
+      {valor ? (
+        <img src={valor} alt={alt} className={`${altoVista} max-w-full rounded border border-slate-100 bg-white object-contain p-1`} />
+      ) : (
+        <p className="text-sm text-slate-500">Sin imagen.</p>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <label className="inline-flex cursor-pointer items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-slate-100">
+          {valor ? "Cambiar" : "Subir"}
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            className="sr-only"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (!f) return;
+              try {
+                setError(null);
+                const v = await imagenComoDataUrl(f, maxAncho);
+                if (v.length > 700_000) throw new Error("La imagen sigue muy pesada; prueba con una más pequeña.");
+                onChange(v);
+              } catch (err) {
+                setError((err as Error).message);
+              }
+            }}
+          />
+        </label>
+        {valor && (
+          <Boton variante="texto" onClick={() => onChange("")}>
+            Quitar
+          </Boton>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-slate-500">PNG o JPG. Se achica solo a {maxAncho} px de ancho.</p>
+      {error && <div className="mt-2"><Aviso>{error}</Aviso></div>}
+    </div>
+  );
+}
+
 function FormAjustes({ inicial, onGuardado }: { inicial: TAjustes; onGuardado: (a: TAjustes) => void }) {
   const [d, setD] = useState(inicial);
-  const [errorLogo, setErrorLogo] = useState<string | null>(null);
   const cambiado = JSON.stringify(d) !== JSON.stringify(inicial);
   const guardar = useMutation({ mutationFn: () => enviar<TAjustes>("PUT", "/configuracion", d), onSuccess: onGuardado });
 
@@ -144,43 +187,24 @@ function FormAjustes({ inicial, onGuardado }: { inicial: TAjustes; onGuardado: (
             ))}
           </div>
         </Caja>
-        <Caja titulo="Logo">
-          {d.logo ? (
-            <img src={d.logo} alt="Logo actual" className="max-h-28 max-w-full rounded border border-slate-100 bg-white object-contain p-2" />
-          ) : (
-            <p className="text-sm text-slate-500">Sin logo.</p>
-          )}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <label className="inline-flex cursor-pointer items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-slate-100">
-              {d.logo ? "Cambiar logo" : "Subir logo"}
-              <input
-                type="file"
-                accept="image/png,image/jpeg"
-                className="sr-only"
-                onChange={async (e) => {
-                  const f = e.target.files?.[0];
-                  e.target.value = "";
-                  if (!f) return;
-                  try {
-                    setErrorLogo(null);
-                    const logo = await logoComoDataUrl(f);
-                    if (logo.length > 700_000) throw new Error("La imagen sigue muy pesada; prueba con una más pequeña.");
-                    setD({ ...d, logo });
-                  } catch (err) {
-                    setErrorLogo((err as Error).message);
-                  }
-                }}
-              />
-            </label>
-            {d.logo && (
-              <Boton variante="texto" onClick={() => setD({ ...d, logo: "" })}>
-                Quitar
-              </Boton>
-            )}
-          </div>
-          <p className="mt-2 text-xs text-slate-500">PNG o JPG. Se achica solo a 800 px de ancho.</p>
-          {errorLogo && <div className="mt-2"><Aviso>{errorLogo}</Aviso></div>}
-        </Caja>
+        <div className="space-y-4">
+          <Caja titulo="Logo">
+            <CampoImagen valor={d.logo} maxAncho={800} alt="Logo actual" altoVista="max-h-28" onChange={(logo) => setD({ ...d, logo })} />
+          </Caja>
+          <Caja titulo="Íconos de redes">
+            <div className="space-y-4">
+              <div>
+                <p className="mb-1 text-sm font-medium text-slate-700">Junto al nombre de la empresa</p>
+                <CampoImagen valor={d.iconosEmpresa} maxAncho={400} alt="Íconos junto a la empresa" altoVista="max-h-8" onChange={(iconosEmpresa) => setD({ ...d, iconosEmpresa })} />
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-medium text-slate-700">Junto al teléfono</p>
+                <CampoImagen valor={d.iconosTelefono} maxAncho={200} alt="Ícono junto al teléfono" altoVista="max-h-8" onChange={(iconosTelefono) => setD({ ...d, iconosTelefono })} />
+              </div>
+              <p className="text-xs text-slate-500">Una sola imagen por renglón (p. ej. Instagram, TikTok y Facebook juntos). Salen en el PDF a la derecha del texto.</p>
+            </div>
+          </Caja>
+        </div>
         <div className="flex items-center gap-3 lg:col-span-2">
           <Boton type="submit" variante="primario" disabled={!cambiado || guardar.isPending}>
             {guardar.isPending ? "Guardando…" : "Guardar ajustes"}

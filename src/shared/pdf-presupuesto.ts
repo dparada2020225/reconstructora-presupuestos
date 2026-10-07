@@ -57,6 +57,9 @@ const VERDE = rgb(0x8c / 255, 0xda / 255, 0x1f / 255);
 const NEGRO = rgb(0, 0, 0);
 const GRIS = rgb(0.35, 0.35, 0.35);
 
+/** Alto de los íconos junto a la empresa y el teléfono (pt). */
+const ALTO_ICONO = 13;
+
 async function incrustarLogo(doc: PDFDocument, dataUrl: string): Promise<PDFImage | null> {
   const m = dataUrl.match(/^data:image\/(png|jpeg);base64,(.+)$/);
   if (!m) return null;
@@ -206,7 +209,17 @@ async function membrete(doc: PDFDocument, l: Lienzo, a: Ajustes, d: { lugar: str
     ["No. Placa / transporte:", true],
     [placaBus, false],
   ];
-  const derecha = [a.correo, a.empresa, a.telefono ? `Tel: ${a.telefono}` : ""].filter(Boolean);
+  // Derecha: correo, empresa (+ íconos de redes) y teléfono (+ ícono). Los íconos van pegados al texto
+  // y el grupo queda alineado al margen derecho, como en el Excel.
+  const [iconosEmpresa, iconosTelefono] = await Promise.all([
+    a.iconosEmpresa ? incrustarLogo(doc, a.iconosEmpresa) : null,
+    a.iconosTelefono ? incrustarLogo(doc, a.iconosTelefono) : null,
+  ]);
+  const derecha: [string, PDFImage | null][] = [
+    [a.correo, null],
+    [a.empresa, iconosEmpresa],
+    [a.telefono ? `Tel: ${a.telefono}` : "", iconosTelefono],
+  ];
   const yInicio = l.y;
   izquierda.forEach(([t, b]) => {
     l.texto(t, MARGEN, { f: b ? l.negrita : l.normal, tam: 11 });
@@ -214,8 +227,17 @@ async function membrete(doc: PDFDocument, l: Lienzo, a: Ajustes, d: { lugar: str
   });
   const yFin = l.y;
   l.y = yInicio;
-  for (const t of derecha) {
-    l.texto(t, ANCHO - MARGEN, { f: l.negrita, tam: 10, alinear: "der" });
+  for (const [t, icono] of derecha) {
+    if (!t && !icono) continue;
+    let x = ANCHO - MARGEN;
+    if (icono) {
+      const alto = ALTO_ICONO;
+      const ancho = (icono.width / icono.height) * alto;
+      x -= ancho;
+      l.pagina.drawImage(icono, { x, y: l.y - 3.5, width: ancho, height: alto });
+      x -= 3;
+    }
+    if (t) l.texto(t, x, { f: l.negrita, tam: 10, alinear: "der" });
     l.y -= 14;
   }
   l.y = yFin - 6;

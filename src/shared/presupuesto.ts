@@ -92,9 +92,16 @@ export interface Ajustes {
   lugar: string;
   /** data:image/png;base64,… o "" */
   logo: string;
+  /** Íconos (una imagen) que van a la derecha del nombre de la empresa, p. ej. las redes sociales. */
+  iconosEmpresa: string;
+  /** Ícono que va a la derecha del teléfono, p. ej. WhatsApp. */
+  iconosTelefono: string;
 }
 
-export const CLAVES_AJUSTES = ["empresa", "correo", "telefono", "firma", "nota", "lugar", "logo"] as const;
+/** Ajustes que son imágenes (data URL PNG/JPG). */
+export const IMAGENES_AJUSTES = ["logo", "iconosEmpresa", "iconosTelefono"] as const;
+
+export const CLAVES_AJUSTES = ["empresa", "correo", "telefono", "firma", "nota", "lugar", ...IMAGENES_AJUSTES] as const;
 
 export const AJUSTES_VACIOS: Ajustes = {
   empresa: "",
@@ -104,6 +111,8 @@ export const AJUSTES_VACIOS: Ajustes = {
   nota: "NOTA: Los trabajos realizados que no se encuentren en esta hoja se tomarán como EXTRA.",
   lugar: "",
   logo: "",
+  iconosEmpresa: "",
+  iconosTelefono: "",
 };
 
 /** Una línea guardada tal como la usan el PDF y el respaldo en Sheets. */

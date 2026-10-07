@@ -8,6 +8,11 @@ import { requiereRol } from "../middleware/auth";
 import { condicionPendiente, contarPendientes, googleConfigurado, respaldarPresupuesto } from "../respaldo";
 
 const texto = (max: number) => z.string().trim().max(max, `Máximo ${max} caracteres`);
+const imagen = (nombre: string) =>
+  z
+    .string()
+    .max(700_000, `${nombre} es muy pesado (máximo ~500 KB)`)
+    .refine((v) => v === "" || /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(v), `${nombre} debe ser PNG o JPG`);
 const cambio = z
   .object({
     empresa: texto(120),
@@ -16,10 +21,9 @@ const cambio = z
     firma: texto(120),
     nota: texto(600),
     lugar: texto(160),
-    logo: z
-      .string()
-      .max(700_000, "El logo es muy pesado (máximo ~500 KB)")
-      .refine((v) => v === "" || /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(v), "El logo debe ser PNG o JPG"),
+    logo: imagen("El logo"),
+    iconosEmpresa: imagen("La imagen de redes"),
+    iconosTelefono: imagen("El ícono del teléfono"),
   })
   .partial();
 

@@ -1,4 +1,4 @@
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, PDFName, PDFRawStream } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { generarPdf, generarPdfTrabajo, nombreArchivoPdf, nombreArchivoPdfTrabajo, type DatosPdf } from "./pdf-presupuesto";
 import { AJUSTES_VACIOS } from "./presupuesto";
@@ -21,7 +21,22 @@ const datos = (n: number, extra: Partial<DatosPdf> = {}): DatosPdf => ({
   ...extra,
 });
 
+/** PNG de 1×1 (inventado). */
+const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
 describe("PDF del presupuesto", () => {
+  it("pone los íconos junto a la empresa y el teléfono", async () => {
+    const sin = await generarPdf(datos(1));
+    const con = await generarPdf(datos(1, { ajustes: { ...datos(1).ajustes, iconosEmpresa: PNG, iconosTelefono: PNG } }));
+    const imagenes = async (b: Uint8Array) =>
+      (await PDFDocument.load(b)).context.enumerateIndirectObjects().filter(([, o]) => o instanceof PDFRawStream && o.dict.get(PDFName.of("Subtype")) === PDFName.of("Image")).length;
+    expect(await imagenes(sin)).toBe(0);
+    // Dos íconos; cada PNG con transparencia se guarda como imagen + máscara.
+    expect(await imagenes(con)).toBe(4);
+    // Un ícono que no es imagen válida no rompe el PDF.
+    await expect(generarPdf(datos(1, { ajustes: { ...datos(1).ajustes, iconosEmpresa: "data:image/png;base64,AAAA" } }))).resolves.toBeInstanceOf(Uint8Array);
+  });
+
   it("genera un PDF válido, con varias páginas si hace falta", async () => {
     const corto = await PDFDocument.load(await generarPdf(datos(3)));
     expect(corto.getPageCount()).toBe(1);

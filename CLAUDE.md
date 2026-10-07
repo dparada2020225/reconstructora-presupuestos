@@ -166,7 +166,8 @@ Ver `docs/PLAN.md`. Actual:
     secciones (secciones repetidas se suman), "CERRADO EN", anticipo/saldo, en extras "RESUMEN DEL TRABAJO",
     NOTA centrada y firma en negrita; "c/u" solo si el precio por unidad es exacto; páginas numeradas si
     son varias. Datos del membrete salen de `configuracion` (página Ajustes; el admin los llena una vez
-    por base, dev y production).
+    por base, dev y production). Íconos de redes: dos imágenes en Ajustes (`iconosEmpresa` junto a la
+    empresa, `iconosTelefono` junto al teléfono), las mismas del Excel; no se dibujan en código ni van al repo.
 - [x] Extras antes de la fase 5: logo centrado y línea verde en el PDF; 5 estados por presupuesto
   (migración 0003, editada a mano: 'listo' → estado de su trabajo); abonos del trabajo con aro de % en
   "Todo el trabajo" (`src/client/editor/EstadoPagos.tsx`, API `POST/PATCH/DELETE /api/trabajos/:id/pagos`;
