@@ -204,13 +204,6 @@ export async function cargarHistorico(db: Db, h: Historico, progreso: Progreso =
       idsPresupuesto.push(...filas.map((f) => f.id));
     }
 
-    /* 6b. El anticipo anotado en el Excel queda como un abono (sin forma de pago conocida). */
-    const abonos = presupuestos
-      .map(({ p }, i) => ({ p, id: idsPresupuesto[i] }))
-      .filter(({ p }) => (p.anticipo ?? 0) > 0)
-      .map(({ p, id }) => ({ presupuestoId: id, fecha: p.fecha ?? "2000-01-01", monto: money(p.anticipo)!, forma: null, nota: "Anticipo anotado en el presupuesto" }));
-    for (const grupo of bloques(abonos, 2000)) await tx.insert(s.pagos).values(grupo);
-
     /* 7. Items: primero los de arriba, después sus sub-items. */
     const fila = (it: Omit<ItemFinal, "hijos">, orden: number, presupuestoId: number, parentId: number | null) => ({
       presupuestoId,

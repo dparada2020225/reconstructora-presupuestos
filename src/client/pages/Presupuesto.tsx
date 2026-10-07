@@ -26,6 +26,7 @@ export function PresupuestoExistente() {
             fecha: p.fecha ?? hoyGuatemala(),
             lugar: p.lugar ?? "",
             cerradoEn: texto(p.cerradoEn),
+            anticipo: texto(p.anticipo),
             notas: p.notas ?? "",
             notaPie: p.notaPie ?? "",
             secciones: desdeItems(p.items),
@@ -50,7 +51,6 @@ export function PresupuestoExistente() {
     estado: p.estado,
     trabajo: p.trabajo,
     hermanos: p.hermanos,
-    pagos: p.pagos,
   };
   return <Editor key={p.id} inicial={inicial} ctx={ctx} acciones={(x) => <AccionesPdf id={p.id} {...x} />} />;
 }
@@ -84,6 +84,7 @@ export function PresupuestoNuevo() {
     fecha: hoyGuatemala(),
     lugar: ajustes.data?.lugar ?? "",
     cerradoEn: "",
+    anticipo: "",
     notas: "",
     notaPie: "",
     secciones: base.data ? copiarSecciones(desdeItems(base.data.items)) : trabajoId ? [seccionVacia("EXTRAS")] : [seccionVacia()],
@@ -95,8 +96,7 @@ export function PresupuestoNuevo() {
     numero: 0,
     estado: "borrador",
     trabajo: t ? { id: t.id, estado: t.estado, cliente: t.cliente, clienteId: t.clienteId, bus: t.bus, placa: t.placa, busId: t.busId } : null,
-    hermanos: t ? t.presupuestos.map((p) => ({ ...p, anticipo: p.abonado || null })) : [],
-    pagos: [],
+    hermanos: t ? t.presupuestos.map((p) => ({ ...p, anticipo: null })) : [],
   };
   return <Editor key={`nuevo-${trabajoId}-${baseId}-${clienteId}`} inicial={inicial} ctx={ctx} />;
 }

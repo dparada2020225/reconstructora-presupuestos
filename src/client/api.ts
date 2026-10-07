@@ -42,7 +42,7 @@ export interface TrabajoResumen {
   placa: string | null;
   cotizado: number;
   monto: number;
-  /** Suma de los abonos de todos sus presupuestos. */
+  /** Suma de los abonos del trabajo. */
   abonado: number;
   presupuestos: {
     id: number;
@@ -53,7 +53,6 @@ export interface TrabajoResumen {
     estado: EstadoPresupuesto;
     total: number;
     cerradoEn: number | null;
-    abonado: number;
   }[];
 }
 
@@ -207,12 +206,13 @@ export interface PresupuestoDetalle {
   origen: "app" | "historico";
   actualizadoEn: string;
   items: ItemGuardado[];
-  pagos: Pago[];
   trabajo: { id: number; estado: EstadoTrabajo; clienteId: number; cliente: string; busId: number | null; bus: string | null; placa: string | null };
   hermanos: Hermano[];
 }
 
 export interface TrabajoDetalle extends TrabajoResumen {
+  /** Abonos de todo el trabajo (no salen en el PDF). */
+  pagos: Pago[];
   notas: string | null;
   fechaFin: string | null;
   origen: "app" | "historico";

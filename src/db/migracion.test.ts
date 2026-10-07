@@ -16,7 +16,7 @@ function carpetaHasta(n: number) {
   return dir;
 }
 
-describe("migración 0003 (estados y pagos)", () => {
+describe("migraciones 0003 y 0004 (estados y abonos por trabajo)", () => {
   it("convierte 'listo' según el trabajo y pasa los anticipos a abonos", async () => {
     const pg = new PGlite();
     const db = drizzle(pg);
@@ -32,11 +32,20 @@ describe("migración 0003 (estados y pagos)", () => {
         (4, 4, 'listo', null, 4000, 100),
         (5, 4, 'borrador', '2024-05-01', 50, null);
     `);
+    // Entre la 0003 y la 0004 se registró un abono de verdad en el presupuesto 5.
+    await migrate(db, { migrationsFolder: carpetaHasta(4) });
+    await pg.exec(`insert into pagos (presupuesto_id, fecha, monto, forma) values (5, '2024-05-02', 25, 'efectivo')`);
     await migrate(db, { migrationsFolder: "./drizzle" });
+    const reales = await pg.query<{ trabajo_id: number; monto: string }>("select trabajo_id, monto from pagos");
+    expect(reales.rows.map((r) => [r.trabajo_id, Number(r.monto)])).toEqual([[4, 25]]);
+    await pg.exec("delete from pagos");
 
     const est = await pg.query<{ id: number; estado: string }>("select id, estado from presupuestos order by id");
     expect(est.rows.map((r) => r.estado)).toEqual(["terminado", "cancelado", "cotizacion", "en_curso", "borrador"]);
-    const pagos = await pg.query<{ presupuesto_id: number; monto: string; forma: string | null }>("select presupuesto_id, monto, forma from pagos order by presupuesto_id");
-    expect(pagos.rows.map((r) => [r.presupuesto_id, Number(r.monto), r.forma])).toEqual([[1, 500, null], [4, 100, null]]);
+    // 0004: el anticipo sigue en el presupuesto; los abonos automáticos de la 0003 se quitan
+    // y los abonos reales quedan en el trabajo de su presupuesto.
+    const ant = await pg.query<{ anticipo: string | null }>("select anticipo from presupuestos order by id");
+    expect(ant.rows.map((r) => (r.anticipo === null ? null : Number(r.anticipo)))).toEqual([500, null, 0, 100, null]);
+    expect((await pg.query("select * from pagos")).rows).toHaveLength(0);
   });
 });

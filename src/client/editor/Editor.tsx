@@ -4,10 +4,10 @@ import { Link, useBlocker, useNavigate } from "react-router";
 import { CATEGORIAS } from "../../shared/categorias";
 import { montoTrabajo } from "../../shared/estadisticas";
 import { nombreDocumento, type Ajustes } from "../../shared/presupuesto";
-import { api, enviar, type EstadoPresupuesto, type Hermano, type Pago, type ProductoFila } from "../api";
+import { api, enviar, type EstadoPresupuesto, type Hermano, type ProductoFila } from "../api";
 import { Aviso, Boton, Caja, Campo, claseInput, ComboBusqueda, Confirmar, ESTADO_PRESUPUESTO, ESTADO_TRABAJO, fechaCorta, formatoQ, Insignia } from "../components/ui";
 import { DocumentoUnificado } from "../pdf/AccionesPdf";
-import { EstadoPagos } from "./EstadoPagos";
+import { AbonosTrabajo, EstadoPresupuestoCaja } from "./EstadoPagos";
 import { NuevoBus, nombreBus, useOpcionesClientes } from "../pages/Buses";
 import { NuevoCliente } from "../pages/Clientes";
 import type { BusFila } from "../api";
@@ -35,7 +35,6 @@ export interface ContextoEditor {
   estado: EstadoPresupuesto;
   trabajo: { id: number; estado: keyof typeof ESTADO_TRABAJO; cliente: string; clienteId: number; bus: string | null; placa: string | null; busId: number | null } | null;
   hermanos: Hermano[];
-  pagos: Pago[];
 }
 
 const botonIcono = "rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent";
@@ -159,7 +158,7 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
   const usadas = new Set(e.secciones.map((s) => s.titulo.trim().toUpperCase()));
   const total = totalEditor(e);
   const cerrado = aNumero(e.cerradoEn);
-  const abonado = ctx.pagos.reduce((a, p) => a + p.monto, 0);
+  const anticipo = aNumero(e.anticipo);
 
   const titulo = ctx.id
     ? `${ctx.trabajo?.cliente ?? "Presupuesto"} · ${nombreDocumento(ctx)}`
@@ -466,34 +465,32 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
                 <dd className="text-2xl font-semibold tabular-nums">{formatoQ(total)}</dd>
               </div>
             </dl>
-            <div className="mt-3">
-              <Campo etiqueta="Cerrado en" ayuda="El precio que se negoció, si fue distinto del total.">
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Campo etiqueta="Cerrado en">
                 <input inputMode="decimal" className={`${claseInput} text-right tabular-nums`} placeholder="—" value={e.cerradoEn} onChange={(ev) => mutar((d) => void (d.cerradoEn = ev.target.value))} />
               </Campo>
+              <Campo etiqueta="Anticipo">
+                <input inputMode="decimal" className={`${claseInput} text-right tabular-nums`} placeholder="—" value={e.anticipo} onChange={(ev) => mutar((d) => void (d.anticipo = ev.target.value))} />
+              </Campo>
             </div>
-            {abonado > 0 && (
-              <dl className="mt-2 space-y-0.5 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-slate-600">Anticipo (abonos)</dt>
-                  <dd className="tabular-nums">{formatoQ(abonado)}</dd>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <dt>Saldo</dt>
-                  <dd className="tabular-nums">{formatoQ((cerrado ?? total) - abonado)}</dd>
-                </div>
-              </dl>
+            {(cerrado !== null || anticipo !== null) && (
+              <p className="mt-2 flex justify-between text-sm">
+                <span className="text-slate-600">Saldo</span>
+                <span className="font-medium tabular-nums">{formatoQ((cerrado ?? total) - (anticipo ?? 0))}</span>
+              </p>
             )}
+            <p className="mt-2 text-xs text-slate-500">El anticipo sale en el PDF de este presupuesto.</p>
           </Caja>
 
-          {ctx.id ? (
-            <EstadoPagos id={ctx.id} estado={ctx.estado} pagos={ctx.pagos} monto={cerrado ?? total} guardarAntes={guardarAntes} />
+          {ctx.id && <EstadoPresupuestoCaja id={ctx.id} estado={ctx.estado} guardarAntes={guardarAntes} />}
+
+          {ctx.trabajoId ? (
+            <ResumenTrabajo ctx={ctx} totalActual={total} cerradoActual={cerrado} guardarAntes={guardarAntes} />
           ) : (
-            <Caja titulo="Estado y abonos">
-              <p className="text-sm text-slate-500">Guarda el presupuesto para cambiar su estado y registrar abonos.</p>
+            <Caja titulo="Todo el trabajo">
+              <p className="text-sm text-slate-500">Guarda el presupuesto para registrar los abonos del trabajo.</p>
             </Caja>
           )}
-
-          {ctx.trabajoId && <ResumenTrabajo ctx={ctx} totalActual={total} cerradoActual={cerrado} guardarAntes={guardarAntes} />}
 
           {ctx.id && (
             <Caja titulo="Más">
@@ -602,6 +599,11 @@ function ResumenTrabajo({
         <span>Total del trabajo</span>
         <span className="tabular-nums">{formatoQ(m.final)}</span>
       </p>
+      {ctx.trabajoId && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <AbonosTrabajo trabajoId={ctx.trabajoId} monto={m.final} />
+        </div>
+      )}
       {ctx.id && ctx.trabajoId && todos.length > 1 && (
         <div className="mt-3">
           <DocumentoUnificado trabajoId={ctx.trabajoId} guardarAntes={guardarAntes} />

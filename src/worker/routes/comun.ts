@@ -81,17 +81,23 @@ export async function trabajosDonde(db: Db, donde: SQL | undefined) {
       estado: s.presupuestos.estado,
       total: s.presupuestos.total,
       cerradoEn: s.presupuestos.cerradoEn,
-      abonado: sql<string | null>`(select sum(pagos.monto) from pagos where pagos.presupuesto_id = presupuestos.id)`,
     })
     .from(s.presupuestos)
     .where(inArray(s.presupuestos.trabajoId, trabajos.map((t) => t.id)))
     .orderBy(asc(s.presupuestos.numero), asc(s.presupuestos.fecha), asc(s.presupuestos.id));
+  // Abonos: son del trabajo completo (original + extras).
+  const abonos = await db
+    .select({ trabajoId: s.pagos.trabajoId, suma: sql<string>`sum(${s.pagos.monto})` })
+    .from(s.pagos)
+    .where(inArray(s.pagos.trabajoId, trabajos.map((t) => t.id)))
+    .groupBy(s.pagos.trabajoId);
+  const abonadoPor = new Map(abonos.map((a) => [a.trabajoId, Number(a.suma)]));
 
   return trabajos
     .map((t) => {
       const ps = presupuestos
         .filter((p) => p.trabajoId === t.id)
-        .map((p) => ({ ...p, total: Number(p.total ?? 0), cerradoEn: numONull(p.cerradoEn), abonado: Number(p.abonado ?? 0) }));
+        .map((p) => ({ ...p, total: Number(p.total ?? 0), cerradoEn: numONull(p.cerradoEn) }));
       // Los cancelados no suman al trabajo.
       const m = montoTrabajo(ps.filter((p) => p.estado !== "cancelado"));
       return {
@@ -100,7 +106,7 @@ export async function trabajosDonde(db: Db, donde: SQL | undefined) {
         presupuestos: ps.map(({ trabajoId: _, ...p }) => p),
         cotizado: m.cotizado,
         monto: m.final,
-        abonado: ps.reduce((a, p) => a + p.abonado, 0),
+        abonado: abonadoPor.get(t.id) ?? 0,
       };
     })
     .sort((a, b) => (b.fecha ?? "").localeCompare(a.fecha ?? ""));

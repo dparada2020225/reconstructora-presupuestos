@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { porcentajeAbonado } from "../../shared/estados";
 import { nombreDocumento } from "../../shared/presupuesto";
 import { api, enviar, type TrabajoDetalle } from "../api";
-import { Aro, Aviso, Boton, Caja, claseInput, Encabezado, ESTADO_PRESUPUESTO, ESTADO_TRABAJO, fechaCorta, formatoQ, Insignia } from "../components/ui";
+import { Aviso, Boton, Caja, claseInput, Encabezado, ESTADO_PRESUPUESTO, ESTADO_TRABAJO, fechaCorta, formatoQ, Insignia } from "../components/ui";
+import { AbonosTrabajo } from "../editor/EstadoPagos";
 import { DocumentoUnificado } from "../pdf/AccionesPdf";
 
 export function Trabajo() {
@@ -64,10 +64,7 @@ export function Trabajo() {
                   </span>
                   <span className="text-right tabular-nums">
                     {formatoQ(p.cerradoEn ?? p.total)}
-                    <span className="block text-xs text-slate-500">
-                      {p.cerradoEn !== null && `cotizado ${formatoQ(p.total)} · `}
-                      {p.abonado > 0 ? `abonado ${formatoQ(p.abonado)}` : "sin abonos"}
-                    </span>
+                    {p.cerradoEn !== null && <span className="block text-xs text-slate-500">cotizado {formatoQ(p.total)}</span>}
                   </span>
                 </Link>
               </li>
@@ -89,23 +86,7 @@ export function Trabajo() {
 
         <div className="space-y-4">
           <Caja titulo="Abonos de todo el trabajo">
-            <div className="flex items-center gap-4">
-              <Aro valor={porcentajeAbonado(t.abonado, t.monto)} etiqueta="Abonado del trabajo" />
-              <dl className="space-y-0.5 text-sm">
-                <div>
-                  <dt className="inline text-slate-500">Abonado </dt>
-                  <dd className="inline font-semibold tabular-nums">{formatoQ(t.abonado)}</dd>
-                </div>
-                <div className="text-slate-500">de {formatoQ(t.monto)}</div>
-                <div>
-                  <dt className="inline text-slate-500">Saldo </dt>
-                  <dd className="inline font-medium tabular-nums">{formatoQ(Math.max(0, t.monto - t.abonado))}</dd>
-                </div>
-              </dl>
-            </div>
-            <p className="mt-3 text-xs text-slate-500">
-              Los abonos y el estado se registran en cada presupuesto. El estado del trabajo se calcula solo a partir de sus presupuestos.
-            </p>
+            <AbonosTrabajo trabajoId={t.id} monto={t.monto} />
           </Caja>
           <NotasTrabajo key={t.notas ?? ""} inicial={t.notas ?? ""} guardando={guardarNotas.isPending} onGuardar={(n) => guardarNotas.mutate(n)} />
           {guardarNotas.error && <Aviso>{guardarNotas.error.message}</Aviso>}

@@ -374,9 +374,7 @@ export interface DatosPdfTrabajo {
   lugar: string | null;
   /** Fecha del documento unificado (hoy). */
   fecha: string;
-  documentos: (DocumentoTrabajo & { fecha: string | null; items: ItemPdf[] })[];
-  /** Suma de los abonos de todo el trabajo. */
-  abonado: number;
+  documentos: (DocumentoTrabajo & { fecha: string | null; items: ItemPdf[]; anticipo: number | null })[];
 }
 
 /** Documento unificado: original + Extra 1, 2, 3… (cada uno con sus secciones) y al final el resumen. */
@@ -396,7 +394,8 @@ export async function generarPdfTrabajo(d: DatosPdfTrabajo): Promise<Uint8Array>
     totalDocumento(l, cuerpo(l, x.items, `TOTAL ${nombre}`), x.total, x.cerradoEn, `TOTAL ${nombre}`);
   }
   const total = resumenTrabajo(l, docs);
-  anticipoYSaldo(l, d.abonado || null, total);
+  // Anticipo = lo anotado en cada presupuesto (los abonos del trabajo no salen en el PDF).
+  anticipoYSaldo(l, docs.reduce((a, x) => a + (x.anticipo ?? 0), 0) || null, total);
   pie(l, d.ajustes, null);
   return doc.save();
 }

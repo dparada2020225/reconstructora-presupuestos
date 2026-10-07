@@ -101,8 +101,7 @@ export function DocumentoUnificado({ trabajoId, guardarAntes }: { trabajoId: num
         bus: t.bus,
         lugar: detalles.find((p) => p.tipo === "original")?.lugar ?? detalles[0]?.lugar ?? ajustes.lugar,
         fecha: hoyGuatemala(),
-        documentos: detalles.map((p) => ({ id: p.id, tipo: p.tipo, numero: p.numero, total: p.total, cerradoEn: p.cerradoEn, estado: p.estado, fecha: p.fecha, items: p.items })),
-        abonado: t.abonado,
+        documentos: detalles.map((p) => ({ id: p.id, tipo: p.tipo, numero: p.numero, total: p.total, cerradoEn: p.cerradoEn, anticipo: p.anticipo, estado: p.estado, fecha: p.fecha, items: p.items })),
       };
       abrir(await pdf.generarPdfTrabajo(datos), pdf.nombreArchivoPdfTrabajo(datos), ventana);
     } catch (e) {

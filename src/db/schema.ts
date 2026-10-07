@@ -208,7 +208,7 @@ export const presupuestos = pgTable(
     total: quetzales("total"),
     /** "Cerrado en": precio negociado de este documento. */
     cerradoEn: quetzales("cerrado_en"),
-    /** Suma de los abonos (tabla pagos); se recalcula al registrar o borrar uno. */
+    /** Anticipo que se anota en el presupuesto (sale en el PDF). Los abonos del trabajo son aparte. */
     anticipo: quetzales("anticipo"),
     notas: text("notas"),
     notaPie: text("nota_pie"),
@@ -226,14 +226,17 @@ export const presupuestos = pgTable(
   ],
 );
 
-/** Abonos que el cliente da a un presupuesto. Su suma es el "anticipo" que sale en el PDF. */
+/**
+ * Abonos que el cliente da al TRABAJO (original + extras, todo junto). Se registran desde
+ * cualquier presupuesto del trabajo. No salen en el PDF (ahí sale el anticipo de cada presupuesto).
+ */
 export const pagos = pgTable(
   "pagos",
   {
     id: serial("id").primaryKey(),
-    presupuestoId: integer("presupuesto_id")
+    trabajoId: integer("trabajo_id")
       .notNull()
-      .references(() => presupuestos.id, { onDelete: "cascade" }),
+      .references(() => trabajos.id, { onDelete: "cascade" }),
     fecha: date("fecha").notNull(),
     monto: quetzales("monto").notNull(),
     forma: formaPago("forma"),
@@ -241,7 +244,7 @@ export const pagos = pgTable(
     creadoPor: integer("creado_por").references(() => usuarios.id, { onDelete: "set null" }),
     creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("pagos_presupuesto_idx").on(t.presupuestoId)],
+  (t) => [index("pagos_trabajo_idx").on(t.trabajoId)],
 );
 
 export const presupuestoItems = pgTable(

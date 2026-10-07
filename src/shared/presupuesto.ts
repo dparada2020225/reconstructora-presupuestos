@@ -27,8 +27,8 @@ export interface PresupuestoEntrada {
   fecha: string;
   lugar: string | null;
   cerradoEn: number | null;
-  /** Ya no se manda: el anticipo es la suma de los abonos. */
-  anticipo?: number | null;
+  /** Anticipo anotado en este presupuesto (sale en el PDF). Los abonos del trabajo son aparte. */
+  anticipo: number | null;
   notas: string | null;
   notaPie: string | null;
   lineas: LineaEntrada[];

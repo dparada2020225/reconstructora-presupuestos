@@ -20,9 +20,11 @@ Estados de cada presupuesto (original o extra): `borrador` → `cotizacion` → 
 `terminado`, o `cancelado`. Un **trabajo** agrupa el presupuesto original y sus **extras**
 ("EXTRAS", "OTRAS EXTRAS"… = el mismo trabajo con cosas agregadas). El estado del trabajo
 (`cotizado`, `en_curso`, `terminado`, `no_concretado`) **se calcula** de sus presupuestos
-(`estadoDelTrabajo` en `src/shared/estados.ts`), no se edita. **Abonos** (tabla `pagos`,
-forma efectivo/cheque/transferencia) por presupuesto: su suma = `presupuestos.anticipo`
-(lo único de los abonos que sale en el PDF). Todo el histórico entra como `terminado`.
+(`estadoDelTrabajo` en `src/shared/estados.ts`), no se edita. **Anticipo**: campo de cada
+presupuesto (al lado de "cerrado en"), sale en su PDF. **Abonos** (tabla `pagos`, forma
+efectivo/cheque/transferencia) son del **trabajo completo** (original + extras), se registran,
+editan y borran desde cualquier presupuesto del trabajo o desde /trabajos/:id, se comparan contra
+el total del trabajo (aro con %) y **no salen en el PDF**. Todo el histórico entra como `terminado`.
 
 ## Reglas que no se rompen
 
@@ -165,8 +167,10 @@ Ver `docs/PLAN.md`. Actual:
     son varias. Datos del membrete salen de `configuracion` (página Ajustes; el admin los llena una vez
     por base, dev y production).
 - [x] Extras antes de la fase 5: logo centrado y línea verde en el PDF; 5 estados por presupuesto
-  (migración 0003, editada a mano: 'listo' → estado de su trabajo; anticipos → abonos); abonos con aro
-  de % en el editor (`src/client/editor/EstadoPagos.tsx`, API `POST/DELETE /api/presupuestos/:id/pagos`);
+  (migración 0003, editada a mano: 'listo' → estado de su trabajo); abonos del trabajo con aro de % en
+  "Todo el trabajo" (`src/client/editor/EstadoPagos.tsx`, API `POST/PATCH/DELETE /api/trabajos/:id/pagos`;
+  migración 0004 editada a mano: pagos.presupuesto_id → trabajo_id, quita los abonos que la 0003 creó de
+  los anticipos; el anticipo sigue siendo campo del presupuesto);
   documento unificado del trabajo (`generarPdfTrabajo`: original + extras + resumen, botón bajo
   "Total del trabajo" y en /trabajos/:id). Estadísticas excluyen borradores y cancelados; los cancelados
   no suman al trabajo.
@@ -175,9 +179,10 @@ Ver `docs/PLAN.md`. Actual:
 
 ## Decisiones (más reciente arriba)
 
-- 2026-10-06 — Estado por presupuesto (5 estados) en vez de borrador/listo + estado del trabajo
-  editable; el del trabajo se deriva. El anticipo ya no se escribe a mano: es la suma de los abonos
-  (PUT del presupuesto no lo toca). Ojo: una función `async` que devuelve un builder de Drizzle lo
+- 2026-10-06 — Estado por presupuesto (5 estados); el del trabajo se deriva. Abonos por TRABAJO (no por
+  presupuesto) y fuera del PDF; el anticipo es un campo manual de cada presupuesto que sí sale en el PDF
+  (en el documento unificado: suma de los anticipos). drizzle-kit pregunta en renombres de columnas: se
+  corre con `script -qfc` y Enter (= columna nueva) y luego se edita el SQL para pasar los datos. Ojo: una función `async` que devuelve un builder de Drizzle lo
   EJECUTA al hacer await (es thenable): para mandarlo a `enLote`, devolverlo envuelto en un objeto.
 
 - 2026-10-06 — Fase 4. El PDF se genera en el navegador (no en el Worker: ~10 ms de CPU). El membrete

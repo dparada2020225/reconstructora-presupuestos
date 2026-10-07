@@ -140,22 +140,29 @@ describe("presupuestos", () => {
     expect((await t()).estado).toBe("en_curso");
   });
 
-  it("abonos: suman el anticipo y se pueden borrar", async () => {
-    expect((await pedir("POST", `/presupuestos/${id}/pagos`, { fecha: "2026-03-10", monto: 0, forma: "efectivo" })).status).toBe(400);
-    expect((await pedir("POST", `/presupuestos/${id}/pagos`, { fecha: "2026-03-10", monto: 3000, forma: "efectivo", nota: "Primer abono" })).status).toBe(201);
-    await pedir("POST", `/presupuestos/${id}/pagos`, { fecha: "2026-03-20", monto: 2500.5, forma: "transferencia" });
-    let p = (await pedir("GET", `/presupuestos/${id}`)).json;
-    expect(p.anticipo).toBe(5500.5);
-    expect(p.pagos.map((g: any) => [g.monto, g.forma, g.creadoPor])).toEqual([[3000, "efectivo", "Admin"], [2500.5, "transferencia", "Admin"]]);
-    // Guardar el presupuesto no toca el anticipo.
-    await pedir("PUT", `/presupuestos/${id}`, base([linea("Pintura afuera", 8500, { productoId })], { cerradoEn: 8000, fecha: "2026-03-05", anticipo: null }));
-    expect((await pedir("GET", `/presupuestos/${id}`)).json.anticipo).toBe(5500.5);
-    expect((await pedir("GET", `/trabajos/${trabajoId}`)).json.abonado).toBe(5500.5);
+  it("abonos del trabajo: crear, editar y borrar; el anticipo del presupuesto es aparte", async () => {
+    const ruta = `/trabajos/${trabajoId}/pagos`;
+    expect((await pedir("POST", ruta, { fecha: "2026-03-10", monto: 0, forma: "efectivo" })).status).toBe(400);
+    expect((await pedir("POST", ruta, { fecha: "2026-03-10", monto: 3000, forma: "efectivo", nota: "Primer abono" })).status).toBe(201);
+    await pedir("POST", ruta, { fecha: "2026-03-20", monto: 2500.5, forma: "transferencia" });
+    let t = (await pedir("GET", `/trabajos/${trabajoId}`)).json;
+    expect(t.abonado).toBe(5500.5);
+    expect(t.pagos.map((g: any) => [g.monto, g.forma, g.creadoPor])).toEqual([[3000, "efectivo", "Admin"], [2500.5, "transferencia", "Admin"]]);
 
-    for (const g of p.pagos) await pedir("DELETE", `/presupuestos/${id}/pagos/${g.id}`);
-    p = (await pedir("GET", `/presupuestos/${id}`)).json;
-    expect([p.anticipo, p.pagos.length]).toEqual([null, 0]);
-    expect((await pedir("DELETE", `/presupuestos/${id}/pagos/99999`)).status).toBe(404);
+    // Editar un abono actualiza lo abonado.
+    expect((await pedir("PATCH", `${ruta}/${t.pagos[1].id}`, { fecha: "2026-03-21", monto: 2000, forma: "cheque", nota: "No. 123" })).status).toBe(200);
+    t = (await pedir("GET", `/trabajos/${trabajoId}`)).json;
+    expect([t.abonado, t.pagos[1].forma, t.pagos[1].nota]).toEqual([5000, "cheque", "No. 123"]);
+
+    // El anticipo es un campo del presupuesto (sale en el PDF), independiente de los abonos.
+    await pedir("PUT", `/presupuestos/${id}`, base([linea("Pintura afuera", 8500, { productoId })], { cerradoEn: 8000, fecha: "2026-03-05", anticipo: 1500 }));
+    expect((await pedir("GET", `/presupuestos/${id}`)).json.anticipo).toBe(1500);
+    expect((await pedir("GET", `/trabajos/${trabajoId}`)).json.abonado).toBe(5000);
+
+    for (const g of t.pagos) await pedir("DELETE", `${ruta}/${g.id}`);
+    t = (await pedir("GET", `/trabajos/${trabajoId}`)).json;
+    expect([t.abonado, t.pagos.length]).toEqual([0, 0]);
+    expect((await pedir("DELETE", `${ruta}/99999`)).status).toBe(404);
   });
 
   it("la lista trae cliente, bus y documento", async () => {

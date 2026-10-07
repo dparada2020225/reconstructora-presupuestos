@@ -5,7 +5,7 @@ import { z } from "zod";
 import * as s from "../../db/schema";
 import { enLote, reservarIds, type Db } from "../../db/tipos";
 import { claveProducto } from "../../shared/claves";
-import { ESTADOS_PRESUPUESTO, estadoDelTrabajo, FORMAS_PAGO, type EstadoPresupuesto } from "../../shared/estados";
+import { ESTADOS_PRESUPUESTO, estadoDelTrabajo, type EstadoPresupuesto } from "../../shared/estados";
 import { hoyGuatemala, precioLinea, totalLineas, type LineaEntrada } from "../../shared/presupuesto";
 import type { AppEnv } from "../env";
 import { conflicto, dinero, idDe, noEncontrado, numONull, textoOpcional } from "./comun";
@@ -35,7 +35,7 @@ const cuerpo = z.object({
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
   lugar: textoOpcional(160),
   cerradoEn: monto,
-  anticipo: monto.optional(),
+  anticipo: monto.default(null),
   notas: textoOpcional(4000),
   notaPie: textoOpcional(600),
   lineas: z.array(linea).max(500, "Máximo 500 líneas"),
@@ -119,20 +119,6 @@ async function sincronizarTrabajo(db: Db, trabajoId: number, cambio: { id: numbe
   };
 }
 
-/** Recalcula el anticipo del presupuesto = suma de sus abonos (null si no hay). */
-const recalcularAnticipo = (db: Db, presupuestoId: number) =>
-  db
-    .update(s.presupuestos)
-    .set({ anticipo: sql`(select nullif(sum(pagos.monto), 0) from pagos where pagos.presupuesto_id = ${presupuestoId})` })
-    .where(eq(s.presupuestos.id, presupuestoId));
-
-const cuerpoPago = z.object({
-  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
-  monto: z.number().positive("El monto debe ser mayor que 0").max(1_000_000_000),
-  forma: z.enum(FORMAS_PAGO).nullable(),
-  nota: textoOpcional(300),
-});
-
 function encabezado(d: Cuerpo) {
   return {
     titulo: d.titulo ?? null,
@@ -140,7 +126,7 @@ function encabezado(d: Cuerpo) {
     lugar: d.lugar ?? null,
     total: dinero(totalLineas(d.lineas)),
     cerradoEn: dinero(d.cerradoEn) ?? null,
-    // El anticipo no se edita: es la suma de los abonos (ver /:id/pagos).
+    anticipo: dinero(d.anticipo) ?? null,
     notas: d.notas ?? null,
     notaPie: d.notaPie ?? null,
   };
@@ -179,7 +165,7 @@ export const rutasPresupuestos = new Hono<AppEnv>()
   .get("/:id", async (c) => {
     const id = idDe(c);
     const p = await presupuesto(c.var.db, id);
-    const [items, trabajo, hermanos, pagos] = await Promise.all([
+    const [items, trabajo, hermanos] = await Promise.all([
       c.var.db
         .select()
         .from(s.presupuestoItems)
@@ -213,15 +199,8 @@ export const rutasPresupuestos = new Hono<AppEnv>()
         .from(s.presupuestos)
         .where(eq(s.presupuestos.trabajoId, p.trabajoId))
         .orderBy(asc(s.presupuestos.numero), asc(s.presupuestos.fecha), asc(s.presupuestos.id)),
-      c.var.db
-        .select({ id: s.pagos.id, fecha: s.pagos.fecha, monto: s.pagos.monto, forma: s.pagos.forma, nota: s.pagos.nota, creadoPor: s.usuarios.nombre })
-        .from(s.pagos)
-        .leftJoin(s.usuarios, eq(s.usuarios.id, s.pagos.creadoPor))
-        .where(eq(s.pagos.presupuestoId, id))
-        .orderBy(asc(s.pagos.fecha), asc(s.pagos.id)),
     ]);
     return c.json({
-      pagos: pagos.map((g) => ({ ...g, monto: Number(g.monto) })),
       ...p,
       total: Number(p.total ?? 0),
       cerradoEn: numONull(p.cerradoEn),
@@ -316,28 +295,6 @@ export const rutasPresupuestos = new Hono<AppEnv>()
     const db = c.var.db;
     const p = await presupuesto(db, id);
     await enLote(db, [db.update(s.presupuestos).set({ estado }).where(eq(s.presupuestos.id, id)), (await sincronizarTrabajo(db, p.trabajoId, { id, estado })).consulta]);
-    return c.json({ ok: true });
-  })
-
-  /* ───── Abonos ───── */
-  .post("/:id/pagos", async (c) => {
-    const id = idDe(c);
-    const d = cuerpoPago.parse(await c.req.json());
-    const db = c.var.db;
-    await presupuesto(db, id);
-    await enLote(db, [
-      db.insert(s.pagos).values({ presupuestoId: id, fecha: d.fecha, monto: d.monto.toFixed(2), forma: d.forma, nota: d.nota ?? null, creadoPor: c.var.usuario.id }),
-      recalcularAnticipo(db, id),
-    ]);
-    return c.json({ ok: true }, 201);
-  })
-  .delete("/:id/pagos/:pagoId", async (c) => {
-    const id = idDe(c);
-    const pagoId = idDe(c, "pagoId");
-    const db = c.var.db;
-    const [pago] = await db.select({ id: s.pagos.id }).from(s.pagos).where(and(eq(s.pagos.id, pagoId), eq(s.pagos.presupuestoId, id)));
-    if (!pago) throw noEncontrado("Abono");
-    await enLote(db, [db.delete(s.pagos).where(eq(s.pagos.id, pagoId)), recalcularAnticipo(db, id)]);
     return c.json({ ok: true });
   })
 

@@ -40,10 +40,10 @@ describe("PDF del presupuesto", () => {
   it("documento unificado: original + extras, sin cancelados", async () => {
     const d = datos(5);
     const doc = (id: number, numero: number, estado: string) => ({
-      id, tipo: numero ? ("extra" as const) : ("original" as const), numero, total: 1000, cerradoEn: null, estado, fecha: "2026-03-02", items: d.items,
+      id, tipo: numero ? ("extra" as const) : ("original" as const), numero, total: 1000, cerradoEn: null, anticipo: numero ? null : 500, estado, fecha: "2026-03-02", items: d.items,
     });
     const pdf = await generarPdfTrabajo({
-      ajustes: d.ajustes, cliente: "Cliente Inventado", placa: null, bus: "La Prueba", lugar: "Pueblo", fecha: "2026-04-01", abonado: 500,
+      ajustes: d.ajustes, cliente: "Cliente Inventado", placa: null, bus: "La Prueba", lugar: "Pueblo", fecha: "2026-04-01",
       documentos: [doc(1, 0, "terminado"), doc(2, 1, "en_curso"), doc(3, 2, "cancelado")],
     });
     expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThanOrEqual(2);
