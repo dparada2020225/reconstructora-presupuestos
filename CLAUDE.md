@@ -175,15 +175,17 @@ Ver `docs/PLAN.md`. Actual:
   documento unificado del trabajo (`generarPdfTrabajo`: original + extras + resumen, botón bajo
   "Total del trabajo" y en /trabajos/:id). Estadísticas excluyen borradores y cancelados; los cancelados
   no suman al trabajo.
-- [x] Fase 5 — Respaldo en Google Sheets (código listo; falta que el dueño haga la configuración de
-  docs/DESPLIEGUE.md → "Google Sheets" y corra `npm run configurar:google`). `src/worker/respaldo.ts`:
+- [x] Fase 5 — Respaldo en Google Sheets. Configurado (API, cuenta de servicio `respaldo-presupuestos`, archivo
+  "Respaldo presupuestos" en el Drive del admin con la pestaña FORMATO copiada del Excel) y probado con Google real. `src/worker/respaldo.ts`:
   token de cuenta de servicio (JWT RS256 con jose, cacheado), duplica la pestaña FORMATO del archivo
   `SHEETS_RESPALDO_ID`, ubica las filas leyendo la plantilla (`detectarPosiciones`), inserta filas si no
-  caben, escribe valores (USER_ENTERED; TOTAL = `SUMIF(A:A,"-",D:D)` por sección) y formatos (títulos
+  caben, escribe valores (USER_ENTERED; TOTAL = `=SUM(Da:Db)+…` de las filas de líneas: sin "," ni ";" porque el
+  separador de argumentos depende del idioma del archivo; con "," daba #ERROR! en el archivo en español) y formatos (títulos
   centrados, TOTAL verde). Renglones en `src/shared/respaldo.ts` (mismo orden que el PDF). Se dispara en
   segundo plano (`waitUntil`) al guardar o cambiar estado de un presupuesto de la app que no es borrador;
   manual `POST /api/presupuestos/:id/respaldo`; pendientes = `respaldado_en < actualizado_en`
-  (`GET /api/configuracion/respaldo`, `POST …/respaldo/pendientes` de a 5). Migración 0005. Probado con
+  (`GET /api/configuracion/respaldo`, `POST …/respaldo/pendientes` de a 5; `POST …/respaldo/rehacer` (admin) marca
+  todos como pendientes = botón "Volver a copiar todos" en Ajustes). Migración 0005. Probado con
   Google simulado (`src/worker/respaldo.test.ts`).
 - [ ] Fase 6 — Pulido
 

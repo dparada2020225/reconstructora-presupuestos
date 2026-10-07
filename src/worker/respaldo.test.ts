@@ -42,11 +42,12 @@ describe("renglones y celdas", () => {
     // Fila 16 = título ADENTRO; 17 = Pintura; 18 = detalle; 19 = TOTAL de 17:18.
     expect(filas[1][0]).toBe("'-");
     expect(filas[1][3]).toBe(1000);
-    expect(filas[3][3]).toBe('=SUMIF(A17:A18,"-",D17:D18)');
-    expect(filas[8][3]).toBe('=SUMIF(A22:A23,"-",D22:D23)');
+    expect(filas[3][3]).toBe("=SUM(D17:D18)");
+    expect(filas[8][3]).toBe("=SUM(D22:D23)");
     expect(filas[7][3]).toBe("?");
-    // TOTAL general suma solo las líneas con "-".
-    expect(filas[13][3]).toBe('=SUMIF(A16:A28,"-",D16:D28)');
+    // TOTAL general suma solo las líneas (no los TOTAL ni el resumen) y sin separadores de argumentos.
+    expect(filas[13][3]).toBe("=SUM(D17:D18)+SUM(D22:D23)");
+    expect(filas.flat().filter((v) => String(v).startsWith("=")).every((v) => !/[,;]/.test(String(v)))).toBe(true);
     expect(formatos.filter((f) => f.tipo === "verde").map((f) => f.fila)).toEqual([19, 24, 29, 30]);
   });
 
@@ -134,7 +135,7 @@ describe("respaldarPresupuesto (Google simulado)", () => {
     expect(valores.valueInputOption).toBe("USER_ENTERED");
     const area = valores.data.find((d: any) => d.range.endsWith("!A16:D57"));
     expect(area.values).toHaveLength(42);
-    expect(area.values[41][3]).toBe('=SUMIF(A17:A56,"-",D17:D56)');
+    expect(area.values[41][3]).toBe("=SUM(D17:D56)");
     expect(valores.data.map((d: any) => d.range.split("!")[1])).toEqual(["A8", "A10", "A12", "A16:D57", "A60"]);
 
     const [p] = await db.select().from(s.presupuestos).where(eq(s.presupuestos.id, id));
@@ -146,6 +147,14 @@ describe("respaldarPresupuesto (Google simulado)", () => {
   it("al respaldar otra vez borra la pestaña anterior", async () => {
     await respaldarPresupuesto(db, env, id, google);
     expect(llamadas.some((l) => l.cuerpo?.requests?.[0]?.deleteSheet?.sheetId === 777)).toBe(true);
+  });
+
+  it("'Volver a copiar todos' deja pendientes los ya copiados", async () => {
+    expect((await contarPendientes(db))[0].n).toBe(0);
+    const app = crearApp(() => db);
+    const r = await app.request("/api/configuracion/respaldo/rehacer", { method: "POST" }, env);
+    expect(await r.json()).toMatchObject({ configurado: true, pendientes: 1 });
+    await respaldarPresupuesto(db, env, id, google);
   });
 
   it("si Google falla, anota el error y el presupuesto sigue igual", async () => {

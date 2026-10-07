@@ -67,6 +67,10 @@ function RespaldoAjustes() {
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["presupuesto"] }),
   });
+  const rehacer = useMutation({
+    mutationFn: () => enviar<{ configurado: boolean; pendientes: number }>("POST", "/configuracion/respaldo/rehacer"),
+    onSuccess: (r) => qc.setQueryData(["respaldo"], r),
+  });
   const d = estado.data;
   return (
     <Caja titulo="Respaldo en Google Sheets">
@@ -90,11 +94,17 @@ function RespaldoAjustes() {
               <span className="text-emerald-700">✓ Todo copiado.</span>
             )}
           </p>
-          {d.pendientes > 0 && (
-            <Boton variante="primario" disabled={copiar.isPending} onClick={() => copiar.mutate()}>
-              {copiar.isPending ? "Copiando…" : "Copiar pendientes"}
+          <div className="flex flex-wrap items-center gap-2">
+            {d.pendientes > 0 && (
+              <Boton variante="primario" disabled={copiar.isPending} onClick={() => copiar.mutate()}>
+                {copiar.isPending ? "Copiando…" : "Copiar pendientes"}
+              </Boton>
+            )}
+            <Boton variante="texto" disabled={rehacer.isPending || copiar.isPending} onClick={() => rehacer.mutate()} title="Vuelve a copiar todos los presupuestos de la app (reemplaza sus pestañas)">
+              Volver a copiar todos
             </Boton>
-          )}
+          </div>
+          {rehacer.error && <Aviso>{rehacer.error.message}</Aviso>}
           {copiar.error && <Aviso>{copiar.error.message}</Aviso>}
           {errores.map((e) => (
             <Aviso key={e}>{e}</Aviso>

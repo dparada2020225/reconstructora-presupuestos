@@ -1,4 +1,4 @@
-import { asc, sql } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import * as s from "../../db/schema";
@@ -51,4 +51,14 @@ export const rutasConfiguracion = new Hono<AppEnv>()
     for (const { id } of ids) await respaldarPresupuesto(c.var.db, c.env, id).catch((e: Error) => errores.push(`#${id}: ${e.message}`));
     const [{ n }] = await contarPendientes(c.var.db);
     return c.json({ hechos: ids.length - errores.length, errores, pendientes: n });
+  })
+
+  /** Marca todos los presupuestos de la app como pendientes (para volver a copiarlos, p. ej. tras cambiar la plantilla). */
+  .post("/respaldo/rehacer", requiereRol("admin"), async (c) => {
+    await c.var.db
+      .update(s.presupuestos)
+      .set({ respaldadoEn: null })
+      .where(and(eq(s.presupuestos.origen, "app"), ne(s.presupuestos.estado, "borrador")));
+    const [{ n }] = await contarPendientes(c.var.db);
+    return c.json({ configurado: googleConfigurado(c.env), pendientes: n });
   });

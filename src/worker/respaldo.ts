@@ -118,10 +118,27 @@ async function plantilla(f: Fetch, tk: string, archivo: string) {
 /** Texto que Sheets no debe interpretar como fórmula. */
 const txt = (t: string) => (/^[=+\-@]/.test(t) ? `'${t}` : t);
 
+/**
+ * Suma de la columna D en las filas de líneas (items y sus detalles, que no tienen monto) entre
+ * `desde` y `hasta`. Sin comas ni punto y coma: el separador de argumentos depende del idioma del
+ * archivo (en español es ";"), así que solo se usan rangos y "+", que valen en cualquier idioma.
+ */
+function sumaLineas(lineas: number[], desde: number, hasta: number) {
+  const tramos: [number, number][] = [];
+  for (const f of lineas) {
+    if (f < desde || f > hasta) continue;
+    const ult = tramos.at(-1);
+    if (ult && ult[1] === f - 1) ult[1] = f;
+    else tramos.push([f, f]);
+  }
+  return tramos.length ? `=${tramos.map(([a, b]) => `SUM(D${a}:D${b})`).join("+")}` : 0;
+}
+
 /** Valores A:D de cada renglón + qué filas llevan formato especial. */
 export function celdas(renglones: Renglon[], PRIMERA = POSICIONES_EXCEL.primera) {
   const filas: (string | number)[][] = [];
   const formatos: { fila: number; tipo: "titulo" | "verde" | "negrita" | "detalle" }[] = [];
+  const lineas: number[] = [];
   let inicioSeccion = PRIMERA;
   renglones.forEach((r, i) => {
     const fila = PRIMERA + i;
@@ -133,15 +150,16 @@ export function celdas(renglones: Renglon[], PRIMERA = POSICIONES_EXCEL.primera)
         break;
       case "item":
         filas.push(["'-", txt(`${r.texto}${PUNTOS}`), "", r.precio ?? ""]);
+        lineas.push(fila);
         break;
       case "detalle":
         filas.push(["", txt(r.texto), "", ""]);
         formatos.push({ fila, tipo: "detalle" });
+        lineas.push(fila);
         break;
       case "suma": {
         const desde = r.alcance === "todo" ? PRIMERA : inicioSeccion;
-        const hasta = fila - 1;
-        filas.push(["", `${r.texto}${PUNTOS}`, "", hasta >= desde ? `=SUMIF(A${desde}:A${hasta},"-",D${desde}:D${hasta})` : 0]);
+        filas.push(["", `${r.texto}${PUNTOS}`, "", sumaLineas(lineas, desde, fila - 1)]);
         formatos.push({ fila, tipo: "verde" });
         inicioSeccion = fila + 1;
         break;
