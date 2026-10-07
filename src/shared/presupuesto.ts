@@ -105,3 +105,29 @@ export const AJUSTES_VACIOS: Ajustes = {
   lugar: "",
   logo: "",
 };
+
+/** Una línea guardada tal como la usan el PDF y el respaldo en Sheets. */
+export interface ItemImpreso {
+  id: number;
+  parentId: number | null;
+  orden: number;
+  seccion: string | null;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: number | null;
+  precio: number | null;
+  precioPendiente: boolean;
+}
+
+/** Descripción como se imprime: con la cantidad adelante si no la trae y el precio por unidad. */
+export function descripcionImpresa(i: ItemImpreso): string {
+  let d = i.descripcion.trim();
+  const cant = Number.isInteger(i.cantidad) ? String(i.cantidad) : String(i.cantidad).replace(".", ",");
+  if (i.cantidad !== 1 && !d.startsWith(`${cant} `) && !d.startsWith(`${i.cantidad} `))
+    // "Sillas nuevas" × 4 → "4 sillas nuevas"
+    d = `${cant} ${/^\p{Lu}\p{Ll}/u.test(d) ? d.charAt(0).toLowerCase() + d.slice(1) : d}`;
+  // El precio por unidad solo si es exacto (no "Q141.67 c/u" de un total repartido).
+  const exacto = i.precioUnitario !== null && i.precio !== null && Math.round(i.precioUnitario * i.cantidad * 100) === Math.round(i.precio * 100);
+  if (i.cantidad !== 1 && exacto && !i.precioPendiente) d += ` (${quetzales(i.precioUnitario!)} c/u)`;
+  return d;
+}

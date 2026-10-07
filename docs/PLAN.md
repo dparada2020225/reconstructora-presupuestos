@@ -49,8 +49,8 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 - Estado del trabajo: cotizado / en curso / terminado / no concretado.
 - **PDF** con el formato de la plantilla (logo, encabezado, nota, firma), listo para pasar por WhatsApp/correo.
 
-## Fase 5 — Respaldo en Google Sheets
-- Un archivo por año en el Drive del admin, compartido con la cuenta de servicio.
+## Fase 5 — Respaldo en Google Sheets ✅ (falta configurar la cuenta de Google)
+- Un archivo en el Drive del admin, compartido con la cuenta de servicio (una pestaña por presupuesto).
 - Cada presupuesto listo → se duplica la pestaña plantilla (FORMATO), se llena y se
   insertan filas si hace falta. Link guardado en `presupuestos.sheet_url`.
 - Si Google falla, el presupuesto igual se guarda y se reintenta después.

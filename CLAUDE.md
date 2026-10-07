@@ -92,6 +92,7 @@ npm run etl:parse         # Excel → ../_etl/{historico.json,revision.md,estadi
 npm run etl:load          # historico.json → base de .env (idempotente)
 npm run etl:load:produccion  # igual, pero pide la URL de la rama production
 npm run configurar:produccion  # pide la URL de production: migra, siembra y la guarda como secreto del Worker
+npm run configurar:google # pide el .json de la cuenta de servicio y el link del Sheets de respaldo → .dev.vars + secretos
 ```
 
 ## ETL del histórico (fase 1)
@@ -174,10 +175,23 @@ Ver `docs/PLAN.md`. Actual:
   documento unificado del trabajo (`generarPdfTrabajo`: original + extras + resumen, botón bajo
   "Total del trabajo" y en /trabajos/:id). Estadísticas excluyen borradores y cancelados; los cancelados
   no suman al trabajo.
-- [ ] Fase 5 — Respaldo en Google Sheets con el formato de siempre
+- [x] Fase 5 — Respaldo en Google Sheets (código listo; falta que el dueño haga la configuración de
+  docs/DESPLIEGUE.md → "Google Sheets" y corra `npm run configurar:google`). `src/worker/respaldo.ts`:
+  token de cuenta de servicio (JWT RS256 con jose, cacheado), duplica la pestaña FORMATO del archivo
+  `SHEETS_RESPALDO_ID`, ubica las filas leyendo la plantilla (`detectarPosiciones`), inserta filas si no
+  caben, escribe valores (USER_ENTERED; TOTAL = `SUMIF(A:A,"-",D:D)` por sección) y formatos (títulos
+  centrados, TOTAL verde). Renglones en `src/shared/respaldo.ts` (mismo orden que el PDF). Se dispara en
+  segundo plano (`waitUntil`) al guardar o cambiar estado de un presupuesto de la app que no es borrador;
+  manual `POST /api/presupuestos/:id/respaldo`; pendientes = `respaldado_en < actualizado_en`
+  (`GET /api/configuracion/respaldo`, `POST …/respaldo/pendientes` de a 5). Migración 0005. Probado con
+  Google simulado (`src/worker/respaldo.test.ts`).
 - [ ] Fase 6 — Pulido
 
 ## Decisiones (más reciente arriba)
+
+- 2026-10-06 — Fase 5. Respaldo solo de presupuestos creados en la app (el histórico ya está en el Excel).
+  Un solo archivo de Sheets con una pestaña por presupuesto ("fecha cliente [Extra n] #id"); al
+  re-respaldar se borra la pestaña anterior (gid guardado en `sheet_url`) y se crea de nuevo.
 
 - 2026-10-06 — Estado por presupuesto (5 estados); el del trabajo se deriva. Abonos por TRABAJO (no por
   presupuesto) y fuera del PDF; el anticipo es un campo manual de cada presupuesto que sí sale en el PDF

@@ -51,6 +51,7 @@ export function PresupuestoExistente() {
     estado: p.estado,
     trabajo: p.trabajo,
     hermanos: p.hermanos,
+    respaldo: { origen: p.origen, sheetUrl: p.sheetUrl, respaldadoEn: p.respaldadoEn, respaldoError: p.respaldoError, actualizadoEn: p.actualizadoEn },
   };
   return <Editor key={p.id} inicial={inicial} ctx={ctx} acciones={(x) => <AccionesPdf id={p.id} {...x} />} />;
 }

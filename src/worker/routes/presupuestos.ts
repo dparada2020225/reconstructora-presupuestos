@@ -8,6 +8,7 @@ import { claveProducto } from "../../shared/claves";
 import { ESTADOS_PRESUPUESTO, estadoDelTrabajo, type EstadoPresupuesto } from "../../shared/estados";
 import { hoyGuatemala, precioLinea, totalLineas, type LineaEntrada } from "../../shared/presupuesto";
 import type { AppEnv } from "../env";
+import { googleConfigurado, respaldarEnSegundoPlano, respaldarPresupuesto } from "../respaldo";
 import { conflicto, dinero, idDe, noEncontrado, numONull, textoOpcional } from "./comun";
 
 const monto = z.number().nonnegative("No puede ser negativo").max(1_000_000_000).nullable();
@@ -286,6 +287,7 @@ export const rutasPresupuestos = new Hono<AppEnv>()
       db.update(s.presupuestos).set(encabezado(d)).where(eq(s.presupuestos.id, id)),
       ...(Object.keys(cambiosTrabajo).length ? [db.update(s.trabajos).set(cambiosTrabajo).where(eq(s.trabajos.id, p.trabajoId))] : []),
     ]);
+    if (p.estado !== "borrador" && p.origen === "app") respaldarEnSegundoPlano(c, id);
     return c.json({ ok: true });
   })
 
@@ -295,7 +297,20 @@ export const rutasPresupuestos = new Hono<AppEnv>()
     const db = c.var.db;
     const p = await presupuesto(db, id);
     await enLote(db, [db.update(s.presupuestos).set({ estado }).where(eq(s.presupuestos.id, id)), (await sincronizarTrabajo(db, p.trabajoId, { id, estado })).consulta]);
+    if (estado !== "borrador" && p.origen === "app") respaldarEnSegundoPlano(c, id);
     return c.json({ ok: true });
+  })
+
+  /** Copiar ya a Google Sheets (botón "Respaldar ahora"). */
+  .post("/:id/respaldo", async (c) => {
+    const id = idDe(c);
+    await presupuesto(c.var.db, id);
+    if (!googleConfigurado(c.env)) throw new HTTPException(503, { message: "El respaldo en Google Sheets todavía no está configurado" });
+    try {
+      return c.json({ url: await respaldarPresupuesto(c.var.db, c.env, id) });
+    } catch (e) {
+      throw new HTTPException(502, { message: (e as Error).message });
+    }
   })
 
   /** Solo borradores. Si era el único presupuesto del trabajo, el trabajo también se borra. */

@@ -8,6 +8,7 @@ import { api, enviar, type EstadoPresupuesto, type Hermano, type ProductoFila } 
 import { Aviso, Boton, Caja, Campo, claseInput, ComboBusqueda, Confirmar, ESTADO_PRESUPUESTO, ESTADO_TRABAJO, fechaCorta, formatoQ, Insignia } from "../components/ui";
 import { DocumentoUnificado } from "../pdf/AccionesPdf";
 import { AbonosTrabajo, EstadoPresupuestoCaja } from "./EstadoPagos";
+import { RespaldoSheets } from "./Respaldo";
 import { NuevoBus, nombreBus, useOpcionesClientes } from "../pages/Buses";
 import { NuevoCliente } from "../pages/Clientes";
 import type { BusFila } from "../api";
@@ -35,6 +36,8 @@ export interface ContextoEditor {
   estado: EstadoPresupuesto;
   trabajo: { id: number; estado: keyof typeof ESTADO_TRABAJO; cliente: string; clienteId: number; bus: string | null; placa: string | null; busId: number | null } | null;
   hermanos: Hermano[];
+  /** Respaldo en Google Sheets (solo presupuestos ya guardados). */
+  respaldo?: { origen: "app" | "historico"; sheetUrl: string | null; respaldadoEn: string | null; respaldoError: string | null; actualizadoEn: string };
 }
 
 const botonIcono = "rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent";
@@ -509,6 +512,11 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
                   </Boton>
                 )}
               </div>
+              {ctx.respaldo && (
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <RespaldoSheets id={ctx.id} estado={ctx.estado} {...ctx.respaldo} />
+                </div>
+              )}
             </Caja>
           )}
         </aside>

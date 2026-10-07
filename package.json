@@ -20,6 +20,7 @@
     "etl:load": "tsx scripts/etl/load.ts",
     "cf-typegen": "wrangler types",
     "configurar:produccion": "tsx scripts/configurar-produccion.ts",
+    "configurar:google": "tsx scripts/configurar-google.ts",
     "etl:load:produccion": "tsx scripts/etl/load.ts --produccion"
   },
   "dependencies": {

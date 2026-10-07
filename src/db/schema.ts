@@ -214,6 +214,9 @@ export const presupuestos = pgTable(
     notaPie: text("nota_pie"),
     /** Link a la pestaña de respaldo en Google Sheets. */
     sheetUrl: text("sheet_url"),
+    /** Cuándo se copió por última vez a Sheets, y el error si el último intento falló. */
+    respaldadoEn: timestamp("respaldado_en", { withTimezone: true }),
+    respaldoError: text("respaldo_error"),
     /** Para históricos: archivo y pestaña/bloque de donde salió. */
     origenRef: text("origen_ref"),
     origen: origenRegistro("origen").notNull().default("app"),

@@ -24,7 +24,8 @@ estadísticas de todo el histórico.
   pedido, evolución de precios, categorías.
 - **Acceso por solicitud:** cualquiera puede identificarse; queda pendiente hasta que el
   administrador lo autoriza en la página Usuarios.
-- **Respaldo en Google Sheets** (fase 5, pendiente).
+- **Respaldo en Google Sheets:** cada presupuesto se copia a una pestaña con el formato de
+  siempre, automáticamente al guardar o cambiar de estado.
 
 ## Stack
 
@@ -77,6 +78,7 @@ En local no hay login: `DEV_AUTH_EMAIL` dice quién eres.
 | `npm run db:migrate:produccion` | Pide la URL de production y le aplica las migraciones |
 | `npm run db:seed-usuarios` | Registra los usuarios de `SEED_USUARIOS` como activos |
 | `npm run configurar:produccion` | Primera vez: migra production, siembra usuarios y guarda la URL como secreto del Worker |
+| `npm run configurar:google` | Respaldo en Sheets: lee el `.json` de la cuenta de servicio y el link del archivo, y guarda los secretos |
 | `npm run etl:parse` | Lee los Excel históricos (fuera del repo) y genera `../_etl/` |
 | `npm run etl:load` | Carga el histórico a la base de `.env` |
 | `npm run etl:load:produccion` | Igual, pidiendo la URL de production |
@@ -95,7 +97,7 @@ En local no hay login: `DEV_AUTH_EMAIL` dice quién eres.
 |---|---|
 | `.env` (local, ignorado) | `DATABASE_URL` (dev), `DATA_DIR`, `ETL_OUT_DIR`, `SEED_USUARIOS` |
 | `.dev.vars` (local, ignorado) | `DATABASE_URL` (dev), `DEV_AUTH_EMAIL` |
-| Secretos del Worker (`wrangler secret put`) | `DATABASE_URL` (production); en la fase 5, las llaves de Google |
+| Secretos del Worker (`wrangler secret put`) | `DATABASE_URL` (production); `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SHEETS_RESPALDO_ID` (con `npm run configurar:google`) |
 | `wrangler.jsonc` → `vars` | `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` (públicos) |
 | Página **Ajustes** de la app (admin) | Membrete del PDF: empresa, correo, teléfono, firma, lugar, nota y logo. Se guarda en la base (una vez en dev y otra en production) |
 

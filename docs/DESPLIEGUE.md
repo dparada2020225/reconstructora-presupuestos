@@ -39,14 +39,31 @@ y en los secretos del Worker; nunca en el repo.
 6. Sembrar solo al admin (`npm run db:seed-usuarios`). Los demás entran, quedan
    pendientes y el admin los autoriza en la página **Usuarios**.
 
-## 4. Google Cloud (respaldo en Sheets, fase 5)
+## Google Sheets (respaldo, fase 5)
 
-1. https://console.cloud.google.com → proyecto nuevo `reconstructora-presupuestos`.
-2. Habilitar **Google Sheets API** y **Google Drive API**.
-3. **IAM → Service Accounts → Create** → crear llave JSON (no se sube a ningún lado).
-4. Secretos del Worker: `GOOGLE_SERVICE_ACCOUNT_EMAIL` y `GOOGLE_PRIVATE_KEY`.
-5. En el Drive del admin: subir la plantilla FORMATO como Google Sheets, compartirla
-   con el correo de la cuenta de servicio (Editor) y guardar su ID en `SHEETS_RESPALDO_ID`.
+Cada presupuesto de la app que deja de ser borrador se copia a una pestaña de UN archivo de
+Sheets en el Drive del admin, duplicando la pestaña **FORMATO** (el formato de siempre). Se
+actualiza solo al guardar o cambiar de estado; si Google falla, el presupuesto queda guardado y
+aparece como pendiente (Ajustes → "Copiar pendientes").
+
+1. **API:** <https://console.cloud.google.com> → proyecto `reconstructora-presupuestos` →
+   *APIs y servicios → Biblioteca* → **Google Sheets API** → *Habilitar*.
+2. **Cuenta de servicio:** *IAM y administración → Cuentas de servicio → Crear cuenta de servicio*
+   (nombre: `respaldo-presupuestos`, sin roles). Entrar a la cuenta → *Claves → Agregar clave →
+   Crear clave nueva → JSON*. Se descarga un `.json`: guardarlo **fuera del repo** (p. ej. en la
+   carpeta `presupuestos`). Es la llave; no se comparte ni se sube.
+3. **Archivo de respaldo:** en Drive crear una hoja de cálculo nueva (p. ej. "Respaldo presupuestos").
+   Desde el Sheets de siempre, clic derecho en la pestaña **FORMATO → Copiar en → Hoja de cálculo
+   existente** → la nueva. En la nueva, renombrar la pestaña copiada a `FORMATO` (quitar "Copia de").
+4. **Compartir** el archivo nuevo (botón *Compartir*) con el correo de la cuenta de servicio
+   (`…@….iam.gserviceaccount.com`, está en el `.json`) como **Editor**.
+5. `npm run configurar:google`: pide la ruta del `.json` (se puede arrastrar a la terminal) y el link
+   del archivo; escribe `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` y `SHEETS_RESPALDO_ID` en
+   `.dev.vars` y los guarda como secretos del Worker.
+6. En la app: **Ajustes → Respaldo en Google Sheets → Copiar pendientes**.
+
+La pestaña FORMATO se lee para ubicar las filas ("Lugar y fecha:", "Cliente:", "No. Placa", la
+primera línea con "-", el TOTAL y la NOTA), así que puede tener filas de más arriba sin problema.
 
 ## Desarrollo local
 

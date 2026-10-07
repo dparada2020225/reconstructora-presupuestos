@@ -1,11 +1,11 @@
-import { inArray, sql } from "drizzle-orm";
+import { asc, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 import * as s from "../../db/schema";
-import type { Db } from "../../db/tipos";
-import { AJUSTES_VACIOS, CLAVES_AJUSTES, type Ajustes } from "../../shared/presupuesto";
+import { leerAjustes } from "../ajustes";
 import type { AppEnv } from "../env";
 import { requiereRol } from "../middleware/auth";
+import { condicionPendiente, contarPendientes, googleConfigurado, respaldarPresupuesto } from "../respaldo";
 
 const texto = (max: number) => z.string().trim().max(max, `Máximo ${max} caracteres`);
 const cambio = z
@@ -23,13 +23,6 @@ const cambio = z
   })
   .partial();
 
-export async function leerAjustes(db: Db): Promise<Ajustes> {
-  const filas = await db.select().from(s.configuracion).where(inArray(s.configuracion.clave, [...CLAVES_AJUSTES]));
-  const out: Ajustes = { ...AJUSTES_VACIOS };
-  for (const f of filas) if ((CLAVES_AJUSTES as readonly string[]).includes(f.clave)) out[f.clave as keyof Ajustes] = f.valor;
-  return out;
-}
-
 /** Membrete del PDF. Lo leen todos; solo el admin lo cambia. */
 export const rutasConfiguracion = new Hono<AppEnv>()
   .get("/", async (c) => c.json(await leerAjustes(c.var.db)))
@@ -42,4 +35,20 @@ export const rutasConfiguracion = new Hono<AppEnv>()
         .values(filas)
         .onConflictDoUpdate({ target: s.configuracion.clave, set: { valor: sql`excluded.valor`, actualizadoEn: sql`now()` } });
     return c.json(await leerAjustes(c.var.db));
+  })
+
+  /** Estado del respaldo en Google Sheets. */
+  .get("/respaldo", async (c) => {
+    const [{ n }] = await contarPendientes(c.var.db);
+    return c.json({ configurado: googleConfigurado(c.env), pendientes: n });
+  })
+
+  /** Respalda los pendientes (de a 5 por vez para no pasarse del tiempo del Worker). */
+  .post("/respaldo/pendientes", async (c) => {
+    if (!googleConfigurado(c.env)) return c.json({ error: "El respaldo en Google Sheets todavía no está configurado" }, 503);
+    const ids = await c.var.db.select({ id: s.presupuestos.id }).from(s.presupuestos).where(condicionPendiente).orderBy(asc(s.presupuestos.id)).limit(5);
+    const errores: string[] = [];
+    for (const { id } of ids) await respaldarPresupuesto(c.var.db, c.env, id).catch((e: Error) => errores.push(`#${id}: ${e.message}`));
+    const [{ n }] = await contarPendientes(c.var.db);
+    return c.json({ hechos: ids.length - errores.length, errores, pendientes: n });
   });

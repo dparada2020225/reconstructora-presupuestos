@@ -41,7 +41,68 @@ export function Ajustes() {
   const q = useQuery({ queryKey: ["configuracion"], queryFn: () => api<TAjustes>("/configuracion") });
   if (me.data && me.data.rol !== "admin") return <p className="text-slate-600">Solo el administrador puede cambiar los ajustes.</p>;
   if (!q.data) return q.error ? <Aviso>{q.error.message}</Aviso> : <p className="text-slate-500">Cargando…</p>;
-  return <FormAjustes key={JSON.stringify(q.data)} inicial={q.data} onGuardado={(a) => qc.setQueryData(["configuracion"], a)} />;
+  return (
+    <div className="space-y-4">
+      <FormAjustes key={JSON.stringify(q.data)} inicial={q.data} onGuardado={(a) => qc.setQueryData(["configuracion"], a)} />
+      <RespaldoAjustes />
+    </div>
+  );
+}
+
+/** Estado del respaldo en Google Sheets y botón para copiar los pendientes. */
+function RespaldoAjustes() {
+  const qc = useQueryClient();
+  const estado = useQuery({ queryKey: ["respaldo"], queryFn: () => api<{ configurado: boolean; pendientes: number }>("/configuracion/respaldo") });
+  const [errores, setErrores] = useState<string[]>([]);
+  const copiar = useMutation({
+    mutationFn: async () => {
+      setErrores([]);
+      // De a 5 por vuelta, hasta terminar o hasta que algo falle.
+      for (let vuelta = 0; vuelta < 40; vuelta++) {
+        const r = await enviar<{ hechos: number; errores: string[]; pendientes: number }>("POST", "/configuracion/respaldo/pendientes");
+        qc.setQueryData(["respaldo"], { configurado: true, pendientes: r.pendientes });
+        if (r.errores.length) return setErrores(r.errores);
+        if (!r.pendientes || !r.hechos) return;
+      }
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["presupuesto"] }),
+  });
+  const d = estado.data;
+  return (
+    <Caja titulo="Respaldo en Google Sheets">
+      {!d ? (
+        <p className="text-sm text-slate-500">Revisando…</p>
+      ) : !d.configurado ? (
+        <p className="text-sm text-slate-600">
+          Todavía no está configurado. Se configura con <code className="rounded bg-slate-100 px-1">npm run configurar:google</code> (ver DESPLIEGUE.md).
+        </p>
+      ) : (
+        <div className="space-y-2 text-sm">
+          <p className="text-slate-600">
+            Cada presupuesto que deja de ser borrador se copia solo a una pestaña del archivo de respaldo, con el formato de siempre.
+          </p>
+          <p>
+            {d.pendientes ? (
+              <>
+                <b>{d.pendientes}</b> {d.pendientes === 1 ? "presupuesto tiene" : "presupuestos tienen"} cambios sin copiar.
+              </>
+            ) : (
+              <span className="text-emerald-700">✓ Todo copiado.</span>
+            )}
+          </p>
+          {d.pendientes > 0 && (
+            <Boton variante="primario" disabled={copiar.isPending} onClick={() => copiar.mutate()}>
+              {copiar.isPending ? "Copiando…" : "Copiar pendientes"}
+            </Boton>
+          )}
+          {copiar.error && <Aviso>{copiar.error.message}</Aviso>}
+          {errores.map((e) => (
+            <Aviso key={e}>{e}</Aviso>
+          ))}
+        </div>
+      )}
+    </Caja>
+  );
 }
 
 function FormAjustes({ inicial, onGuardado }: { inicial: TAjustes; onGuardado: (a: TAjustes) => void }) {

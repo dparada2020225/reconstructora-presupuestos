@@ -205,6 +205,10 @@ export interface PresupuestoDetalle {
   notaPie: string | null;
   origen: "app" | "historico";
   actualizadoEn: string;
+  /** Respaldo en Google Sheets. */
+  sheetUrl: string | null;
+  respaldadoEn: string | null;
+  respaldoError: string | null;
   items: ItemGuardado[];
   trabajo: { id: number; estado: EstadoTrabajo; clienteId: number; cliente: string; busId: number | null; bus: string | null; placa: string | null };
   hermanos: Hermano[];

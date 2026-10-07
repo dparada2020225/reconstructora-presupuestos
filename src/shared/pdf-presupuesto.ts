@@ -9,19 +9,9 @@
  */
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import { montoTrabajo } from "./estadisticas";
-import { lugarYFecha, nombreDocumento, quetzales, type Ajustes } from "./presupuesto";
+import { descripcionImpresa, lugarYFecha, nombreDocumento, quetzales, type Ajustes, type ItemImpreso } from "./presupuesto";
 
-export interface ItemPdf {
-  id: number;
-  parentId: number | null;
-  orden: number;
-  seccion: string | null;
-  descripcion: string;
-  cantidad: number;
-  precioUnitario: number | null;
-  precio: number | null;
-  precioPendiente: boolean;
-}
+export type ItemPdf = ItemImpreso;
 
 export interface DocumentoTrabajo {
   id: number;
@@ -178,19 +168,6 @@ export class Lienzo {
     this.texto(t.toUpperCase(), (X_TEXTO + X_PRECIO) / 2, { f: this.negrita, tam: 11, alinear: "centro" });
     this.y -= RENGLON + 1;
   }
-}
-
-/** Descripción como se imprime: con la cantidad adelante si no la trae y el precio por unidad. */
-function descripcionImpresa(i: ItemPdf): string {
-  let d = i.descripcion.trim();
-  const cant = Number.isInteger(i.cantidad) ? String(i.cantidad) : String(i.cantidad).replace(".", ",");
-  if (i.cantidad !== 1 && !d.startsWith(`${cant} `) && !d.startsWith(`${i.cantidad} `))
-    // "Sillas nuevas" × 4 → "4 sillas nuevas"
-    d = `${cant} ${/^\p{Lu}\p{Ll}/u.test(d) ? d.charAt(0).toLowerCase() + d.slice(1) : d}`;
-  // El precio por unidad solo si es exacto (no "Q141.67 c/u" de un total repartido).
-  const exacto = i.precioUnitario !== null && i.precio !== null && Math.round(i.precioUnitario * i.cantidad * 100) === Math.round(i.precio * 100);
-  if (i.cantidad !== 1 && exacto && !i.precioPendiente) d += ` (${quetzales(i.precioUnitario!)} c/u)`;
-  return d;
 }
 
 const precioImpreso = (i: ItemPdf) => (i.precioPendiente ? "?" : i.precio !== null ? quetzales(i.precio) : "");
