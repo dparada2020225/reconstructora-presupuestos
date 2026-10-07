@@ -8,6 +8,7 @@ import { requiereUsuario } from "./middleware/auth";
 import { rutasBuses } from "./routes/buses";
 import { rutasClientes } from "./routes/clientes";
 import { rutasConfiguracion } from "./routes/configuracion";
+import { rutasCopia } from "./routes/copia";
 import { rutasEstadisticas } from "./routes/estadisticas";
 import { rutasPresupuestos } from "./routes/presupuestos";
 import { rutasProductos } from "./routes/productos";
@@ -50,6 +51,7 @@ export function crearApp(obtenerDb: (env: Env) => Db) {
   app.route("/presupuestos", rutasPresupuestos);
   app.route("/trabajos", rutasTrabajos);
   app.route("/configuracion", rutasConfiguracion);
+  app.route("/copia-base", rutasCopia);
 
   app.onError((err, c) => {
     if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);

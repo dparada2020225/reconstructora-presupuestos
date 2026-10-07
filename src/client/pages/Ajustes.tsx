@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { IMAGENES_AJUSTES, type Ajustes as TAjustes } from "../../shared/presupuesto";
 import { api, enviar, type Usuario } from "../api";
+import { CopiaBaseAjustes } from "../components/CopiaBase";
 import { Aviso, Boton, Caja, Campo, claseInput, Encabezado } from "../components/ui";
 
 /** Achica la imagen (máx. `maxAncho` px de ancho) y la devuelve como PNG en data URL. */
@@ -45,6 +46,7 @@ export function Ajustes() {
     <div className="space-y-4">
       <FormAjustes key={JSON.stringify(q.data)} inicial={q.data} onGuardado={(a) => qc.setQueryData(["configuracion"], a)} />
       <RespaldoAjustes />
+      <CopiaBaseAjustes />
     </div>
   );
 }

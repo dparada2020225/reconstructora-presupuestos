@@ -16,6 +16,7 @@ const prohibidos = [
   /(^|\/)\.env(\..*)?$/,
   /(^|\/)\.dev\.vars(\..*)?$/,
   /(^|\/)historico\.json$/,
+  /(^|\/)copia-base.*\.json$/,
   /(^|\/)overrides.*\.json$/,
   /service-account.*\.json$/i,
   /-key\.json$/i,

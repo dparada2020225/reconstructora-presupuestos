@@ -65,6 +65,17 @@ aparece como pendiente (Ajustes → "Copiar pendientes").
 La pestaña FORMATO se lee para ubicar las filas ("Lugar y fecha:", "Cliente:", "No. Placa", la
 primera línea con "-", el TOTAL y la NOTA), así que puede tener filas de más arriba sin problema.
 
+## Copia de toda la base
+
+- **Desde la app** (admin): Ajustes → *Copia de toda la base* → **Descargar copia (.json)**. Inicio avisa si
+  pasaron más de 30 días sin bajar una. Guardar el archivo fuera del repo (tiene datos del negocio).
+- **Desde la terminal:** `npm run db:copia` (base de `.env`) o `npm run db:copia:produccion` (pide la URL).
+  Quedan en `../copias` (o `COPIAS_DIR`); el script se niega a escribir dentro del repo.
+- **Restaurar:** `npm run db:restaurar -- <archivo.json>` (a la base de `.env`) o con `--produccion`.
+  Pide escribir `RESTAURAR`, borra todo lo que hay y pone lo de la copia, en una transacción (si falla, no
+  cambia nada). La base destino necesita las mismas migraciones que la copia: si no, primero `db:migrate`.
+  Para probar una copia sin tocar nada, restaurarla en una rama nueva de Neon.
+
 ## Desarrollo local
 
 ```bash

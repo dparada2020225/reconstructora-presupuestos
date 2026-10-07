@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { nombreDocumento } from "../../shared/presupuesto";
 import { api, ApiError, type PresupuestoFila, type Usuario } from "../api";
+import { RecordatorioCopia } from "../components/CopiaBase";
 import { fechaCorta, formatoQ } from "../components/ui";
 
 type Health = { ok: boolean; db: boolean };
@@ -29,6 +30,8 @@ export function Inicio() {
           </Link>
         </div>
       )}
+
+      {me.data?.rol === "admin" && <RecordatorioCopia />}
 
       {borradores.length > 0 && (
         <div className="rounded-lg border border-slate-200 bg-white">

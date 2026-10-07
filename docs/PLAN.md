@@ -49,13 +49,19 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 - Estado del trabajo: cotizado / en curso / terminado / no concretado.
 - **PDF** con el formato de la plantilla (logo, encabezado, nota, firma), listo para pasar por WhatsApp/correo.
 
-## Fase 5 — Respaldo en Google Sheets ✅ (falta configurar la cuenta de Google)
+## Fase 5 — Respaldo en Google Sheets ✅
 - Un archivo en el Drive del admin, compartido con la cuenta de servicio (una pestaña por presupuesto).
 - Cada presupuesto listo → se duplica la pestaña plantilla (FORMATO), se llena y se
   insertan filas si hace falta. Link guardado en `presupuestos.sheet_url`.
 - Si Google falla, el presupuesto igual se guarda y se reintenta después.
 
-## Fase 6 — Pulido
-- Compartir PDF por WhatsApp, búsqueda global, atajos.
-- Respaldo periódico de la base (export a Drive).
-- Pagos/anticipos formales si se necesitan.
+## Fase 6 — Pulido ✅
+- **Compartir** el PDF (y el documento unificado) con el menú de compartir del celular o de Windows
+  (WhatsApp, correo…), con el mensaje "Presupuesto de cliente – bus". Si el navegador no puede, no sale el botón.
+- **Búsqueda global** (Ctrl+K o /): presupuestos, clientes, buses y productos desde cualquier página.
+- **Atajos**: N = nuevo presupuesto, ? = lista de atajos, Ctrl+P = ver PDF en el editor (además de Ctrl+S y Enter).
+- **Copia de toda la base**: botón en Ajustes (JSON) + recordatorio en Inicio cada 30 días; también
+  `npm run db:copia[:produccion]`, y `npm run db:restaurar` para volver a cargarla. No se sube sola a Drive:
+  la cuenta de servicio no tiene espacio propio en Drive.
+- Pagos/anticipos formales: ya cubiertos (abonos por trabajo + anticipo por presupuesto).
+- Siguiente: lo que pidan al usarla.

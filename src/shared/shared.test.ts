@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { montoEnTexto, parseQuetzales } from "./dinero";
 import { parseFechaEs } from "./fechas";
+import { mensajeCompartir } from "./presupuesto";
 import { limpiarDescripcion, normalizar, similitud } from "./texto";
 
 describe("parseQuetzales", () => {
@@ -59,5 +60,13 @@ describe("texto", () => {
     // Ismael ≠ Israel pero se parecen igual que un error de dedo:
     // por eso el ETL solo SUGIERE fusiones por similitud, nunca las aplica solo.
     expect(similitud("ismael gomez", "israel gomez")).toBeGreaterThan(0.9);
+  });
+});
+
+describe("mensajeCompartir", () => {
+  it("arma el mensaje que acompaña al PDF (datos inventados)", () => {
+    expect(mensajeCompartir({ cliente: "Ana ", placa: "C-123ABC", bus: "La Prueba", tipo: "original", numero: 0 })).toBe("Presupuesto de Ana – C-123ABC / La Prueba");
+    expect(mensajeCompartir({ cliente: "Ana", placa: null, bus: "La Prueba", tipo: "extra", numero: 2 })).toBe("Presupuesto de Ana – La Prueba (Extra 2)");
+    expect(mensajeCompartir({ cliente: "Ana", placa: null, bus: null, unificado: true })).toBe("Trabajo completo de Ana");
   });
 });

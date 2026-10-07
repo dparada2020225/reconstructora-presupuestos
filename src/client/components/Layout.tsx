@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { NavLink, Outlet } from "react-router";
 import { api, type Usuario } from "../api";
+import { BusquedaGlobal } from "./BusquedaGlobal";
 
 const enlaces = [
   { to: "/", label: "Inicio", end: true },
@@ -21,6 +22,9 @@ export function Layout() {
           <div className="flex items-center gap-2">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-acento" aria-hidden />
             <span className="font-semibold tracking-tight">Reconstructora · Presupuestos</span>
+          </div>
+          <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto sm:flex-1 sm:justify-end">
+            <BusquedaGlobal />
           </div>
           {usuario && (
             <span className="text-sm text-marca-100">

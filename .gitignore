@@ -26,6 +26,8 @@ data/
 _etl/
 datos/
 overrides*.json
+copias/
+copia-base*.json
 
 # Notas locales con info sensible
 CLAUDE.local.md

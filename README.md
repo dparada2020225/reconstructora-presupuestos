@@ -15,7 +15,7 @@ estadísticas de todo el histórico.
   "cerrado en", anticipo y saldo. Sin límite de filas.
 - **Trabajos y extras:** un trabajo agrupa el presupuesto original y sus extras
   (Extra 1, Extra 2…). Estado del trabajo: cotizado, en curso, terminado, no se concretó.
-  Estado del presupuesto: borrador → listo.
+  Estado de cada presupuesto: borrador, cotización, en curso, terminado o cancelado; abonos por trabajo.
 - **PDF** con el formato de siempre (membrete, secciones, TOTAL en verde, resumen,
   nota y firma), generado en el navegador.
 - **Clientes, buses y productos:** búsqueda, edición, unir repetidos y sugerencias de
@@ -26,6 +26,9 @@ estadísticas de todo el histórico.
   administrador lo autoriza en la página Usuarios.
 - **Respaldo en Google Sheets:** cada presupuesto se copia a una pestaña con el formato de
   siempre, automáticamente al guardar o cambiar de estado.
+- **Compartir** el PDF por WhatsApp o correo desde el menú de compartir del celular o la compu.
+- **Búsqueda global** (Ctrl+K) y atajos de teclado (? muestra la lista).
+- **Copia de toda la base** en un archivo (Ajustes o terminal) y restauración con un comando.
 
 ## Stack
 
@@ -79,6 +82,8 @@ En local no hay login: `DEV_AUTH_EMAIL` dice quién eres.
 | `npm run db:seed-usuarios` | Registra los usuarios de `SEED_USUARIOS` como activos |
 | `npm run configurar:produccion` | Primera vez: migra production, siembra usuarios y guarda la URL como secreto del Worker |
 | `npm run configurar:google` | Respaldo en Sheets: lee el `.json` de la cuenta de servicio y el link del archivo, y guarda los secretos |
+| `npm run db:copia` / `db:copia:produccion` | Copia de toda la base a `../copias` (JSON) |
+| `npm run db:restaurar -- <archivo>` | Reemplaza la base por una copia (pide confirmar; `--produccion` para production) |
 | `npm run etl:parse` | Lee los Excel históricos (fuera del repo) y genera `../_etl/` |
 | `npm run etl:load` | Carga el histórico a la base de `.env` |
 | `npm run etl:load:produccion` | Igual, pidiendo la URL de production |

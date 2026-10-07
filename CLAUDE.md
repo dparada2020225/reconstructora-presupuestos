@@ -93,6 +93,8 @@ npm run etl:load          # historico.json → base de .env (idempotente)
 npm run etl:load:produccion  # igual, pero pide la URL de la rama production
 npm run configurar:produccion  # pide la URL de production: migra, siembra y la guarda como secreto del Worker
 npm run configurar:google # pide el .json de la cuenta de servicio y el link del Sheets de respaldo → .dev.vars + secretos
+npm run db:copia          # copia de toda la base (.env) → ../copias/*.json   (db:copia:produccion pide la URL)
+npm run db:restaurar -- <archivo.json> [--produccion]  # reemplaza TODA la base por la copia (pide RESTAURAR)
 ```
 
 ## ETL del histórico (fase 1)
@@ -188,9 +190,26 @@ Ver `docs/PLAN.md`. Actual:
   (`GET /api/configuracion/respaldo`, `POST …/respaldo/pendientes` de a 5; `POST …/respaldo/rehacer` (admin) marca
   todos como pendientes = botón "Volver a copiar todos" en Ajustes). Migración 0005. Probado con
   Google simulado (`src/worker/respaldo.test.ts`).
-- [ ] Fase 6 — Pulido
+- [x] Fase 6 — Pulido:
+  - Compartir PDF (`src/client/pdf/AccionesPdf.tsx`, hook `usePdf`): Web Share API con archivo
+    (`navigator.canShare`); mensaje `mensajeCompartir` (shared/presupuesto.ts). Si generar tarda y el navegador
+    pierde el "clic reciente" (NotAllowedError), queda "PDF listo · Toca para compartir". También en el unificado.
+  - Búsqueda global `src/client/components/BusquedaGlobal.tsx` (Ctrl+K o /) con lógica pura en
+    `src/client/busqueda.ts` (+ test): usa las mismas consultas/caché que las listas. Atajos: N nuevo, ? ayuda,
+    Ctrl+P ver PDF (en AccionesPdf), Ctrl+S guardar y Enter en el editor. Los de una tecla no corren escribiendo.
+  - Copia de toda la base `src/db/copia-base.ts`: `row_to_json` por páginas de 1000 (Worker barato) y
+    restauración con `json_populate_recordset` en transacción + `setval`; `parent_id` de items se pone después.
+    API admin `/api/copia-base` (resumen, `/:tabla?pagina=`, `/ultima`, POST `/hecha` → `configuracion.ultima_copia_base`).
+    UI `src/client/components/CopiaBase.tsx` (Ajustes + recordatorio en Inicio a los 30 días). Scripts
+    `scripts/copia-base.ts` (→ `../copias`, se niega dentro del repo) y `scripts/restaurar-base.ts`.
+    Probado con PGlite (`src/worker/copia-base.test.ts`) y con Postgres 16 real (postgres-js).
 
 ## Decisiones (más reciente arriba)
+
+- 2026-10-07 — Fase 6. Compartir con el menú del sistema (no `wa.me`: solo manda texto y el PDF tendría que
+  estar en un link público). La copia de la base NO se sube sola a Drive: las cuentas de servicio no tienen
+  cuota de Drive y un cron del Worker gratis no alcanza (10 ms de CPU); se descarga desde Ajustes con
+  recordatorio mensual, o por terminal. Íconos de redes del PDF = imágenes subidas en Ajustes (no en el repo).
 
 - 2026-10-06 — Fase 5. Respaldo solo de presupuestos creados en la app (el histórico ya está en el Excel).
   Un solo archivo de Sheets con una pestaña por presupuesto ("fecha cliente [Extra n] #id"); al

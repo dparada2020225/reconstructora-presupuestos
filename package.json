@@ -21,6 +21,9 @@
     "cf-typegen": "wrangler types",
     "configurar:produccion": "tsx scripts/configurar-produccion.ts",
     "configurar:google": "tsx scripts/configurar-google.ts",
+    "db:copia": "tsx scripts/copia-base.ts",
+    "db:copia:produccion": "tsx scripts/copia-base.ts --produccion",
+    "db:restaurar": "tsx scripts/restaurar-base.ts",
     "etl:load:produccion": "tsx scripts/etl/load.ts --produccion"
   },
   "dependencies": {

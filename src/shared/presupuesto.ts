@@ -82,6 +82,17 @@ export function hoyGuatemala(ahora = new Date()): string {
 export const nombreDocumento = (p: { tipo: "original" | "extra"; numero: number }) =>
   p.tipo === "original" ? "Original" : `Extra${p.numero ? ` ${p.numero}` : ""}`;
 
+/**
+ * Mensaje que acompaña al PDF al compartirlo (WhatsApp, correo…):
+ * "Presupuesto de Ana – C-123ABC / La Prueba (Extra 1)" o "Trabajo completo de Ana – La Prueba".
+ */
+export function mensajeCompartir(d: { cliente: string; placa: string | null; bus: string | null; tipo?: "original" | "extra"; numero?: number; unificado?: boolean }) {
+  const bus = [d.placa, d.bus].filter(Boolean).join(" / ");
+  const que = d.unificado ? "Trabajo completo de" : "Presupuesto de";
+  const extra = !d.unificado && d.tipo === "extra" ? ` (${nombreDocumento({ tipo: "extra", numero: d.numero ?? 0 })})` : "";
+  return `${que} ${d.cliente.trim()}${bus ? ` – ${bus}` : ""}${extra}`;
+}
+
 /** Ajustes del membrete (tabla configuracion). */
 export interface Ajustes {
   empresa: string;
