@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extraerJson, instrucciones, normalizarLectura, revisarLectura, sumaSeccionLeida } from "./lector";
+import { extraerJson, instrucciones, leerModos, normalizarLectura, revisarLectura, sumaSeccionLeida } from "./lector";
 
 /** Datos inventados. */
 describe("extraerJson", () => {
@@ -83,6 +83,13 @@ describe("revisarLectura", () => {
   it("sin renglones", () => {
     expect(revisarLectura(normalizarLectura({}))[0].tipo).toBe("vacio");
   });
+});
+
+it("leerModos: valores guardados, por defecto y nunca todos apagados", () => {
+  expect(leerModos(undefined)).toEqual({ mano: true, fotos: true, pegar: true });
+  expect(leerModos('{"pegar":false}')).toEqual({ mano: true, fotos: true, pegar: false });
+  expect(leerModos('{"mano":false,"fotos":false,"pegar":false}')).toEqual({ mano: true, fotos: true, pegar: true });
+  expect(leerModos("roto")).toEqual({ mano: true, fotos: true, pegar: true });
 });
 
 it("las instrucciones llevan el vocabulario del catálogo", () => {

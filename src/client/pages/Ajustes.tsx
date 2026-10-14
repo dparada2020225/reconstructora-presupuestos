@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { IMAGENES_AJUSTES, type Ajustes as TAjustes } from "../../shared/presupuesto";
+import { LISTA_MODOS, MODOS_NUEVO } from "../../shared/lector";
 import { api, enviar, type EstadoLector, type Usuario } from "../api";
 import { CopiaBaseAjustes } from "../components/CopiaBase";
 import { Aviso, Boton, Caja, Campo, claseInput, Encabezado } from "../components/ui";
@@ -52,27 +53,51 @@ export function Ajustes() {
   );
 }
 
-/** Qué IA lee los presupuestos desde fotos. Se cambia aquí, sin tocar el código. */
+/** Qué opciones salen en "Nuevo presupuesto" y qué IA lee las fotos. Se cambia aquí, sin tocar el código. */
 function LectorAjustes() {
   const qc = useQueryClient();
   const estado = useQuery({ queryKey: ["lector"], queryFn: () => api<EstadoLector>("/lector") });
   const cambiar = useMutation({
-    mutationFn: (proveedor: string) => enviar<EstadoLector>("PUT", "/lector", { proveedor }),
+    mutationFn: (cuerpo: { proveedor?: string; modos?: Partial<EstadoLector["modos"]> }) => enviar<EstadoLector>("PUT", "/lector", cuerpo),
     onSuccess: (r) => qc.setQueryData(["lector"], r),
   });
   const d = estado.data;
+  const prendidos = d ? LISTA_MODOS.filter((m) => d.modos[m]).length : 0;
   return (
-    <Caja titulo="Lector de presupuestos desde fotos">
+    <Caja titulo="Nuevo presupuesto: opciones y lector de fotos">
       {!d ? (
         estado.error ? <Aviso>{estado.error.message}</Aviso> : <p className="text-sm text-slate-500">Revisando…</p>
       ) : (
-        <div className="space-y-3 text-sm">
-          <p className="text-slate-600">La IA que lee las fotos en <b>Nuevo presupuesto → Desde fotos</b>. Al leer también se puede probar otro de los disponibles sin cambiar este.</p>
+        <div className="space-y-4 text-sm">
+          <fieldset className="space-y-2">
+            <legend className="mb-1 font-medium text-slate-800">Opciones que salen al hacer un presupuesto nuevo</legend>
+            {LISTA_MODOS.map((m) => {
+              const ultima = d.modos[m] && prendidos === 1;
+              return (
+                <label key={m} className={`flex items-start gap-2 rounded-md border px-3 py-2 ${d.modos[m] ? "border-marca-600 bg-marca-50" : "border-slate-200"} ${ultima ? "" : "cursor-pointer"}`}>
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={d.modos[m]}
+                    disabled={ultima || cambiar.isPending}
+                    onChange={(e) => cambiar.mutate({ modos: { [m]: e.target.checked } })}
+                  />
+                  <span>
+                    <span className="font-medium text-slate-900">{MODOS_NUEVO[m].nombre}</span>
+                    <span className="block text-xs text-slate-600">{MODOS_NUEVO[m].detalle}</span>
+                  </span>
+                </label>
+              );
+            })}
+            <p className="text-xs text-slate-500">Si solo queda una, se abre directo sin preguntar. Siempre tiene que quedar al menos una.</p>
+          </fieldset>
+          <p className="font-medium text-slate-800">Lector de fotos</p>
+          <p className="-mt-3 text-slate-600">La IA que lee las fotos en <b>Desde fotos</b>. Al leer también se puede probar otro de los disponibles sin cambiar este.</p>
           <fieldset className="space-y-2">
             <legend className="sr-only">Lector</legend>
             {d.proveedores.map((p) => (
               <label key={p.id} className={`flex items-start gap-2 rounded-md border px-3 py-2 ${p.id === d.proveedor ? "border-marca-600 bg-marca-50" : "border-slate-200"} ${p.disponible ? "cursor-pointer" : "opacity-60"}`}>
-                <input type="radio" name="lector" className="mt-1" checked={p.id === d.proveedor} disabled={!p.disponible || cambiar.isPending} onChange={() => cambiar.mutate(p.id)} />
+                <input type="radio" name="lector" className="mt-1" checked={p.id === d.proveedor} disabled={!p.disponible || cambiar.isPending} onChange={() => cambiar.mutate({ proveedor: p.id })} />
                 <span>
                   <span className="font-medium text-slate-900">{p.nombre}</span>
                   <span className="block text-xs text-slate-600">

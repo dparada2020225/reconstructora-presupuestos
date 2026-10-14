@@ -225,6 +225,7 @@ export interface TrabajoDetalle extends TrabajoResumen {
 /** GET /api/lector: qué lector de fotos se usa y cuántas lecturas van hoy. */
 export interface EstadoLector {
   proveedor: import("../shared/lector").ProveedorLector;
+  modos: import("../shared/lector").ModosNuevo;
   proveedores: { id: import("../shared/lector").ProveedorLector; nombre: string; detalle: string; modelo: string; disponible: boolean }[];
   usoHoy: number;
   limite: number;

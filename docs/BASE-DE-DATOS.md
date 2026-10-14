@@ -72,7 +72,8 @@ Abonos del **trabajo** (no del presupuesto): `trabajo_id`, `fecha`, `monto`, `fo
 Clave → valor. Membrete del PDF: `empresa`, `correo`, `telefono`, `firma`, `nota`, `lugar`,
 `logo`, `iconosEmpresa`, `iconosTelefono` (imágenes como data URL). Además `ultima_copia_base`
 (fecha de la última copia descargada), `lector_proveedor` (qué IA lee las fotos) y `lector_uso`
-(`{"fecha","n"}`: lecturas del día, para el límite diario). Vive en la base porque el repo es público; hay que llenarla
+(`{"fecha","n"}`: lecturas del día, para el límite diario) y `nuevo_modos` (`{"mano","fotos","pegar"}`:
+opciones prendidas en *Nuevo presupuesto*). Vive en la base porque el repo es público; hay que llenarla
 **una vez en cada base** (dev y production).
 
 ### `duplicados_descartados`

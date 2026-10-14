@@ -17,6 +17,29 @@ export const LISTA_PROVEEDORES = Object.keys(PROVEEDORES_LECTOR) as ProveedorLec
 export const PROVEEDOR_POR_DEFECTO: ProveedorLector = "cloudflare-gemma";
 export const esProveedor = (v: unknown): v is ProveedorLector => typeof v === "string" && v in PROVEEDORES_LECTOR;
 
+/** Formas de hacer un presupuesto nuevo; el admin prende o apaga cada una en Ajustes. */
+export const MODOS_NUEVO = {
+  mano: { nombre: "Hacerlo a mano", detalle: "Escribir las líneas en el editor, con el catálogo y los precios sugeridos." },
+  fotos: { nombre: "Desde fotos", detalle: "Tomar o subir fotos de la hoja escrita a mano. La app la pasa al editor y tú la revisas." },
+  pegar: { nombre: "Pegar JSON", detalle: "Pegar el texto que te dio Claude con /presupuestos. Se abre el editor lleno para revisarlo." },
+} as const;
+export type ModoNuevo = keyof typeof MODOS_NUEVO;
+export const LISTA_MODOS = Object.keys(MODOS_NUEVO) as ModoNuevo[];
+export type ModosNuevo = Record<ModoNuevo, boolean>;
+export const MODOS_POR_DEFECTO: ModosNuevo = { mano: true, fotos: true, pegar: true };
+
+/** Lo guardado en `configuracion.nuevo_modos` → los tres valores (con los de por defecto si falta o está roto). */
+export function leerModos(guardado: string | undefined | null): ModosNuevo {
+  try {
+    const o = JSON.parse(guardado ?? "{}") as Partial<Record<string, unknown>>;
+    const m = { ...MODOS_POR_DEFECTO };
+    for (const k of LISTA_MODOS) if (typeof o[k] === "boolean") m[k] = o[k];
+    return LISTA_MODOS.some((k) => m[k]) ? m : { ...MODOS_POR_DEFECTO };
+  } catch {
+    return { ...MODOS_POR_DEFECTO };
+  }
+}
+
 export const MAX_FOTOS = 6;
 /** Lecturas por día entre todos (para que un error o un abuso no gaste de más). */
 export const LIMITE_DIARIO = 40;

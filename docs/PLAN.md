@@ -78,5 +78,7 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
 - Lector cambiable desde Ajustes (sin tocar código): Cloudflare Workers AI gratis (Gemma 4 o
   Llama 4 Scout) o Claude Sonnet (de pago por uso, si se configura la llave). Límite de 40 lecturas al día.
 - **Pegar de Claude**: el texto (JSON) que devuelve la skill `/presupuestos` de Claude cuando no puede
-  entrar a la app (desde el teléfono) se pega en *Nuevo presupuesto → Pegarlo aquí* y abre el editor lleno.
+  entrar a la app (desde el teléfono) se pega en *Nuevo presupuesto → Pegar JSON* y abre el editor lleno.
+- El admin prende o apaga cada opción de *Nuevo presupuesto* (a mano, desde fotos, pegar JSON) en Ajustes;
+  si solo queda una, se abre directo.
 - Siguiente: lo que pidan al usarla.

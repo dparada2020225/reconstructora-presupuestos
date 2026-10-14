@@ -157,11 +157,11 @@ Sheets en segundo plano.
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| GET | `/lector` | `{ proveedor, proveedores: [{ id, nombre, detalle, modelo, disponible }], usoHoy, limite }`. |
-| PUT | `/lector` | **admin.** `{ proveedor }`: `cloudflare-gemma`, `cloudflare-llama` o `claude`. Se guarda en `configuracion.lector_proveedor`. |
+| GET | `/lector` | `{ proveedor, modos: { mano, fotos, pegar }, proveedores: [{ id, nombre, detalle, modelo, disponible }], usoHoy, limite }`. `modos` = opciones prendidas en *Nuevo presupuesto*. |
+| PUT | `/lector` | **admin.** `{ proveedor?, modos? }`. `proveedor`: `cloudflare-gemma`, `cloudflare-llama` o `claude` (→ `configuracion.lector_proveedor`). `modos`: cualquiera de `{ mano, fotos, pegar }` como booleano (→ `configuracion.nuevo_modos`); 400 si quedarían todos apagados. |
 | POST | `/lector` | `{ fotos: ["data:image/jpeg;base64,…"], vocabulario?: string[], proveedor? }` (1 a 6 fotos JPG/PNG/WebP, ya achicadas en el navegador; `vocabulario` = nombres del catálogo; `proveedor` para probar otro lector sin cambiar el de siempre). Devuelve `{ lectura, proveedor, usoHoy, limite }` con `lectura` = `{ cliente, bus, placa, fecha, lugar, secciones: [{ titulo, totalEscrito, lineas: [{ descripcion, precio, cadaUno, cantidad, precioPendiente, detalles }] }], cerradoEn, anticipo, dudas }`. **No guarda nada**: el navegador abre el editor con eso. |
 
-Errores: `400` fotos inválidas; `429` límite diario (40 lecturas entre todos) o se acabó lo gratis
+Errores: `403` si *Desde fotos* está apagado; `400` fotos inválidas; `429` límite diario (40 lecturas entre todos) o se acabó lo gratis
 de Cloudflare del día; `503` lector sin configurar (falta el binding `AI` o `ANTHROPIC_API_KEY`) o
 Claude sin saldo/ocupado; `502` la IA contestó algo que no es un presupuesto. Cada intento cuenta
 para el límite diario.

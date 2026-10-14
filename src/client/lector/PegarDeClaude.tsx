@@ -16,7 +16,7 @@ const ORIGEN = "Claude (texto pegado)";
  * no puede entrar a la app (p. ej. desde el teléfono): el mismo JSON que da el lector de fotos.
  * Se lee aquí mismo en el navegador, sin llamar a ninguna IA.
  */
-export function PegarDeClaude({ base, ctx, volver }: { base: EditorEstado; ctx: ContextoEditor; volver: string }) {
+export function PegarDeClaude({ base, ctx, volver }: { base: EditorEstado; ctx: ContextoEditor; volver: { to: string; texto: string } }) {
   const clientes = useQuery({ queryKey: ["clientes"], queryFn: () => api<ClienteFila[]>("/clientes") });
   const buses = useQuery({ queryKey: ["buses"], queryFn: () => api<BusFila[]>("/buses") });
   const [texto, setTexto] = useState("");
@@ -66,7 +66,7 @@ export function PegarDeClaude({ base, ctx, volver }: { base: EditorEstado; ctx: 
   const titulo = ctx.trabajoId ? `Nuevo extra · ${ctx.trabajo?.cliente ?? ""}` : "Pegar presupuesto de Claude";
   return (
     <section className="space-y-4">
-      <Encabezado titulo={titulo} volver={{ to: volver, texto: "Escoger otra forma" }} />
+      <Encabezado titulo={titulo} volver={volver} />
       <Caja>
         <div className="space-y-3">
           <p className="text-sm text-slate-700">

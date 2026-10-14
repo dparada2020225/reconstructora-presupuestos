@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { hoyGuatemala, type Ajustes } from "../../shared/presupuesto";
-import { api, type PresupuestoDetalle, type TrabajoDetalle } from "../api";
+import { LISTA_MODOS, MODOS_NUEVO, MODOS_POR_DEFECTO, type ModoNuevo } from "../../shared/lector";
+import { api, type EstadoLector, type PresupuestoDetalle, type TrabajoDetalle } from "../api";
 import { Aviso, Encabezado } from "../components/ui";
 import { Editor, type ContextoEditor } from "../editor/Editor";
 import { copiarSecciones, desdeItems, seccionVacia, type EditorEstado } from "../editor/modelo";
@@ -73,7 +74,7 @@ export function PresupuestoExistente() {
  */
 export function PresupuestoNuevo() {
   const [params] = useSearchParams();
-  const modo = params.get("modo");
+  const modoPedido = params.get("modo");
   const trabajoId = Number(params.get("trabajo")) || null;
   const baseId = Number(params.get("base")) || null;
   const clienteId = Number(params.get("cliente")) || null;
@@ -81,21 +82,26 @@ export function PresupuestoNuevo() {
   const ajustes = useQuery({ queryKey: ["configuracion"], queryFn: () => api<Ajustes>("/configuracion") });
   const trabajo = useQuery({ queryKey: ["trabajo", trabajoId], queryFn: () => api<TrabajoDetalle>(`/trabajos/${trabajoId}`), enabled: !!trabajoId });
   const base = useQuery({ queryKey: ["presupuesto", baseId], queryFn: () => api<PresupuestoDetalle>(`/presupuestos/${baseId}`), enabled: !!baseId });
+  const lector = useQuery({ queryKey: ["lector"], queryFn: () => api<EstadoLector>("/lector"), enabled: !baseId });
 
   const conModo = (m: string) => {
     const p = new URLSearchParams(params);
     p.set("modo", m);
     return `/presupuestos/nuevo?${p}`;
   };
-  if (!baseId && modo !== "mano" && modo !== "fotos" && modo !== "pegar") return (
-      <ElegirModo
-        esExtra={!!trabajoId}
-        mano={conModo("mano")}
-        fotos={conModo("fotos")}
-        pegar={conModo("pegar")}
-        volver={trabajoId ? { to: `/trabajos/${trabajoId}`, texto: "Trabajo" } : clienteId ? { to: `/clientes/${clienteId}`, texto: "Cliente" } : { to: "/presupuestos", texto: "Presupuestos" }}
-      />
-    );
+  // Opciones prendidas en Ajustes. Si solo hay una, se va directo a ella; una apagada no se abre.
+  const modos = lector.data?.modos ?? (lector.error ? MODOS_POR_DEFECTO : null);
+  if (!baseId && !modos) return <p className="text-slate-500">Cargando…</p>;
+  const prendidos = LISTA_MODOS.filter((m) => modos?.[m]);
+  const modo: ModoNuevo | null = baseId
+    ? "mano"
+    : prendidos.includes(modoPedido as ModoNuevo)
+      ? (modoPedido as ModoNuevo)
+      : prendidos.length === 1
+        ? prendidos[0]
+        : null;
+  const atras = trabajoId ? { to: `/trabajos/${trabajoId}`, texto: "Trabajo" } : clienteId ? { to: `/clientes/${clienteId}`, texto: "Cliente" } : { to: "/presupuestos", texto: "Presupuestos" };
+  if (!modo) return <ElegirModo esExtra={!!trabajoId} opciones={prendidos.map((m) => ({ modo: m, to: conModo(m) }))} volver={atras} />;
 
   const listo = !ajustes.isLoading && (!trabajoId || trabajo.data) && (!baseId || base.data);
   const error = trabajo.error ?? base.error;
@@ -127,7 +133,7 @@ export function PresupuestoNuevo() {
   if ((modo === "fotos" || modo === "pegar") && !baseId) {
     const p = new URLSearchParams(params);
     p.delete("modo");
-    const volver = `/presupuestos/nuevo${p.size ? `?${p}` : ""}`;
+    const volver = prendidos.length > 1 ? { to: `/presupuestos/nuevo${p.size ? `?${p}` : ""}`, texto: "Escoger otra forma" } : atras;
     return modo === "fotos" ? (
       <DesdeFotos key={`fotos-${trabajoId}-${clienteId}`} base={inicial} ctx={ctx} volver={volver} />
     ) : (
@@ -137,28 +143,20 @@ export function PresupuestoNuevo() {
   return <Editor key={`nuevo-${trabajoId}-${baseId}-${clienteId}`} inicial={inicial} ctx={ctx} />;
 }
 
-/** "¿Cómo lo quieres hacer?": a mano en el editor o desde fotos de la hoja escrita. */
-function ElegirModo({ esExtra, mano, fotos, pegar, volver }: { esExtra: boolean; mano: string; fotos: string; pegar: string; volver: { to: string; texto: string } }) {
+/** "¿Cómo lo quieres hacer?": una tarjeta por cada opción prendida en Ajustes. */
+function ElegirModo({ esExtra, opciones, volver }: { esExtra: boolean; opciones: { modo: ModoNuevo; to: string }[]; volver: { to: string; texto: string } }) {
   const tarjeta = "flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-5 hover:border-marca-600 hover:bg-marca-50 focus-visible:outline-2 focus-visible:outline-marca-600";
   return (
     <section className="space-y-4">
       <Encabezado titulo={esExtra ? "Nuevo extra" : "Nuevo presupuesto"} detalle="¿Cómo lo quieres hacer?" volver={volver} />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Link to={mano} replace className={tarjeta} autoFocus>
-          <span className="text-lg font-semibold text-slate-900">Hacerlo a mano</span>
-          <span className="text-sm text-slate-600">Escribir las líneas en el editor, con el catálogo y los precios sugeridos.</span>
-        </Link>
-        <Link to={fotos} replace className={tarjeta}>
-          <span className="text-lg font-semibold text-slate-900">Desde fotos</span>
-          <span className="text-sm text-slate-600">Tomar o subir fotos de la hoja escrita a mano. La app la pasa al editor y tú la revisas.</span>
-        </Link>
+      <div className={`grid gap-3 ${opciones.length >= 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}>
+        {opciones.map((o, i) => (
+          <Link key={o.modo} to={o.to} replace className={tarjeta} autoFocus={i === 0}>
+            <span className="text-lg font-semibold text-slate-900">{MODOS_NUEVO[o.modo].nombre}</span>
+            <span className="text-sm text-slate-600">{MODOS_NUEVO[o.modo].detalle}</span>
+          </Link>
+        ))}
       </div>
-      <p className="text-sm text-slate-600">
-        ¿Claude ya te pasó el presupuesto en texto?{" "}
-        <Link to={pegar} replace className="font-medium text-marca-700 hover:underline">
-          Pegarlo aquí
-        </Link>
-      </p>
     </section>
   );
 }

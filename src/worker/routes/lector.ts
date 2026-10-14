@@ -5,6 +5,9 @@ import * as s from "../../db/schema";
 import type { Db } from "../../db/tipos";
 import {
   esProveedor,
+  LISTA_MODOS,
+  leerModos,
+  type ModosNuevo,
   extraerJson,
   instrucciones,
   LIMITE_DIARIO,
@@ -23,6 +26,7 @@ import { requiereRol } from "../middleware/auth";
 
 const CLAVE_PROVEEDOR = "lector_proveedor";
 const CLAVE_USO = "lector_uso";
+const CLAVE_MODOS = "nuevo_modos";
 
 const RE_FOTO = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
 const pedido = z.object({
@@ -37,7 +41,7 @@ const pedido = z.object({
 });
 
 async function leerClaves(db: Db) {
-  const filas = await db.select().from(s.configuracion).where(inArray(s.configuracion.clave, [CLAVE_PROVEEDOR, CLAVE_USO]));
+  const filas = await db.select().from(s.configuracion).where(inArray(s.configuracion.clave, [CLAVE_PROVEEDOR, CLAVE_USO, CLAVE_MODOS]));
   const valor = (k: string) => filas.find((f) => f.clave === k)?.valor;
   const guardado = valor(CLAVE_PROVEEDOR);
   let uso = { fecha: "", n: 0 };
@@ -47,7 +51,12 @@ async function leerClaves(db: Db) {
     /* valor viejo o roto: se empieza de cero */
   }
   const hoy = hoyGuatemala();
-  return { proveedor: esProveedor(guardado) ? guardado : PROVEEDOR_POR_DEFECTO, usoHoy: uso.fecha === hoy ? Number(uso.n) || 0 : 0, hoy };
+  return {
+    proveedor: esProveedor(guardado) ? guardado : PROVEEDOR_POR_DEFECTO,
+    usoHoy: uso.fecha === hoy ? Number(uso.n) || 0 : 0,
+    hoy,
+    modos: leerModos(valor(CLAVE_MODOS)),
+  };
 }
 
 const guardar = (db: Db, clave: string, valor: string) =>
@@ -56,9 +65,11 @@ const guardar = (db: Db, clave: string, valor: string) =>
     .values({ clave, valor })
     .onConflictDoUpdate({ target: s.configuracion.clave, set: { valor: sql`excluded.valor`, actualizadoEn: sql`now()` } });
 
-function estado(env: Env, proveedor: ProveedorLector, usoHoy: number) {
+function estado(env: Env, proveedor: ProveedorLector, usoHoy: number, modos: ModosNuevo) {
   return {
     proveedor,
+    /** Qué opciones salen en "Nuevo presupuesto". */
+    modos,
     proveedores: LISTA_PROVEEDORES.map((id) => ({ id, ...PROVEEDORES_LECTOR[id], disponible: proveedorDisponible(env, id) })),
     usoHoy,
     limite: LIMITE_DIARIO,
@@ -68,23 +79,37 @@ function estado(env: Env, proveedor: ProveedorLector, usoHoy: number) {
 /** Presupuesto desde fotos (ver src/worker/lector.ts y src/shared/lector.ts). */
 export const rutasLector = new Hono<AppEnv>()
   .get("/", async (c) => {
-    const { proveedor, usoHoy } = await leerClaves(c.var.db);
-    return c.json(estado(c.env, proveedor, usoHoy));
+    const { proveedor, usoHoy, modos } = await leerClaves(c.var.db);
+    return c.json(estado(c.env, proveedor, usoHoy, modos));
   })
 
-  /** Cambia el lector que se usa (admin). */
+  /** Cambia el lector que se usa y/o qué opciones salen en "Nuevo presupuesto" (admin). */
   .put("/", requiereRol("admin"), async (c) => {
-    const { proveedor } = z.object({ proveedor: z.string() }).parse(await c.req.json());
-    if (!esProveedor(proveedor)) return c.json({ error: "Ese lector no existe" }, 400);
-    await guardar(c.var.db, CLAVE_PROVEEDOR, proveedor);
-    const { usoHoy } = await leerClaves(c.var.db);
-    return c.json(estado(c.env, proveedor, usoHoy));
+    const datos = z
+      .object({
+        proveedor: z.string().optional(),
+        modos: z.object({ mano: z.boolean(), fotos: z.boolean(), pegar: z.boolean() }).partial().optional(),
+      })
+      .parse(await c.req.json());
+    if (datos.proveedor !== undefined) {
+      if (!esProveedor(datos.proveedor)) return c.json({ error: "Ese lector no existe" }, 400);
+      await guardar(c.var.db, CLAVE_PROVEEDOR, datos.proveedor);
+    }
+    if (datos.modos) {
+      const actual = (await leerClaves(c.var.db)).modos;
+      const nuevos = { ...actual, ...datos.modos };
+      if (!LISTA_MODOS.some((k) => nuevos[k])) return c.json({ error: "Deja al menos una forma de hacer presupuestos" }, 400);
+      await guardar(c.var.db, CLAVE_MODOS, JSON.stringify(nuevos));
+    }
+    const { proveedor, usoHoy, modos } = await leerClaves(c.var.db);
+    return c.json(estado(c.env, proveedor, usoHoy, modos));
   })
 
   /** Lee las fotos y devuelve el presupuesto que encontró (no guarda nada: eso lo hace el editor). */
   .post("/", async (c) => {
     const datos = pedido.parse(await c.req.json());
     const claves = await leerClaves(c.var.db);
+    if (!claves.modos.fotos) return c.json({ error: "La opción Desde fotos está apagada (Ajustes)" }, 403);
     const proveedor = datos.proveedor === undefined ? claves.proveedor : datos.proveedor;
     if (!esProveedor(proveedor)) return c.json({ error: "Ese lector no existe" }, 400);
     if (!proveedorDisponible(c.env, proveedor))

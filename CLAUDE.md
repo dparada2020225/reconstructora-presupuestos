@@ -221,12 +221,14 @@ Ver `docs/PLAN.md`. Actual:
   (`revisarLectura`) en `src/shared/lector.ts` (+ test). Lector escogido en Ajustes (`configuracion.lector_proveedor`),
   límite 40/día (`configuracion.lector_uso`). Sin migración. Las fotos no se guardan (memoria de la pestaña).
   No probado contra Workers AI ni Claude reales desde aquí (el entorno no llega): probado con IA simulada.
-  `?modo=pegar` (`PegarDeClaude.tsx`, link "Pegarlo aquí" en el selector): pega el JSON que da la skill
+  `?modo=pegar` (`PegarDeClaude.tsx`, tarjeta "Pegar JSON"): pega el JSON que da la skill
   `/presupuestos` de Claude cuando no puede entrar a la app (teléfono, compu apagada; la red de la nube de Claude
   bloquea `workers.dev`); se procesa en el navegador con `extraerJson`/`normalizarLectura`/`estadoDesdeLectura`.
   Cliente/bus leídos que no están en la lista se crean solos al guardar (prop `nuevos` del Editor, "No crear" para
   evitarlo). Varios renglones con un solo precio (llave en la hoja) → renglón "Incluye" con ese precio y los demás
   como detalles (regla en `instrucciones()`).
+  Ajustes prende/apaga cada opción de Nuevo presupuesto (`MODOS_NUEVO`/`leerModos` en shared/lector.ts,
+  `configuracion.nuevo_modos`, `PUT /api/lector {modos}`); con una sola se abre directo; `?modo=` apagado no se abre.
 
 ## Decisiones (más reciente arriba)
 

@@ -112,8 +112,8 @@ entrar a la app: te devuelve un bloque de texto.
 
 1. Copia el bloque completo (desde la primera `{` hasta la última `}`; si copias el mensaje entero
    también sirve).
-2. En la app: **+ Nuevo presupuesto → Pegarlo aquí** (abajo de las dos opciones). Para un extra,
-   desde el trabajo: **+ Extra → Pegarlo aquí**.
+2. En la app: **+ Nuevo presupuesto → Pegar JSON**. Para un extra, desde el trabajo:
+   **+ Extra → Pegar JSON**.
 3. **Pegar lo copiado** (o mantén presionado el cuadro → Pegar) → **Abrir en el editor**.
 4. Se abre el editor lleno con el cuadro **Revisa antes de guardar**, igual que desde fotos. Revisa y
    **Guarda**.
@@ -224,7 +224,11 @@ Todos los autorizados pueden hacer lo mismo; el administrador además maneja Usu
   pestaña del archivo de respaldo, con el formato del Excel. Si alguno no se pudo copiar, sale
   como pendiente: **Copiar pendientes**. **Volver a copiar todos** rehace todas las pestañas.
   En cada presupuesto (cuadro *Más*) está el link a su pestaña y *Copiar ahora*.
-- **Lector de presupuestos desde fotos**: qué inteligencia artificial lee las fotos.
+- **Nuevo presupuesto: opciones y lector de fotos**:
+  - Qué opciones salen al hacer un presupuesto nuevo (*Hacerlo a mano*, *Desde fotos*, *Pegar JSON*).
+    Se prenden y apagan con la casilla; si solo queda una, se abre directo sin preguntar. Siempre
+    queda al menos una.
+  - Qué inteligencia artificial lee las fotos.
   *Cloudflare · Gemma 4* y *Cloudflare · Llama 4 Scout* son gratis; *Claude Sonnet* es de pago
   (centavos por presupuesto) y solo se puede escoger si se configuró su llave (ver
   [OPERACION.md](OPERACION.md#lector-de-fotos)). Al leer también se puede probar otro sin

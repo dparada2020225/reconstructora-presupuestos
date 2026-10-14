@@ -14,7 +14,7 @@ import { PanelFotos } from "./PanelFotos";
  * /presupuestos/nuevo?modo=fotos — sube las fotos de la hoja escrita a mano, la IA la lee y se
  * abre el editor normal con todo lleno (como borrador nuevo) y las fotos arriba para comparar.
  */
-export function DesdeFotos({ base, ctx, volver }: { base: EditorEstado; ctx: ContextoEditor; volver: string }) {
+export function DesdeFotos({ base, ctx, volver }: { base: EditorEstado; ctx: ContextoEditor; volver: { to: string; texto: string } }) {
   const qc = useQueryClient();
   const estado = useQuery({ queryKey: ["lector"], queryFn: () => api<EstadoLector>("/lector") });
   const yo = useQuery({ queryKey: ["me"], queryFn: () => api<Usuario>("/me") });
@@ -94,7 +94,7 @@ export function DesdeFotos({ base, ctx, volver }: { base: EditorEstado; ctx: Con
   const titulo = ctx.trabajoId ? `Nuevo extra desde fotos · ${ctx.trabajo?.cliente ?? ""}` : "Nuevo presupuesto desde fotos";
   return (
     <section className="space-y-4">
-      <Encabezado titulo={titulo} volver={{ to: volver, texto: "Escoger otra forma" }} />
+      <Encabezado titulo={titulo} volver={volver} />
 
       <Caja>
         <div className="space-y-3">

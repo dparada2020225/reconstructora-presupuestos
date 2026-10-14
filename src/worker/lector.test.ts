@@ -125,6 +125,16 @@ describe("API del lector de fotos", () => {
     expect(r.json.error).toMatch(/límite diario/);
   });
 
+  it("opciones de Nuevo presupuesto: el admin las prende y apaga, siempre queda una", async () => {
+    expect((await pedir("GET", "/lector")).json.modos).toEqual({ mano: true, fotos: true, pegar: true });
+    expect((await pedir("PUT", "/lector", { modos: { pegar: false } }, env({}, "usuario@ejemplo.com"))).status).toBe(403);
+    expect((await pedir("PUT", "/lector", { modos: { fotos: false, pegar: false } })).json.modos).toEqual({ mano: true, fotos: false, pegar: false });
+    expect((await pedir("PUT", "/lector", { modos: { mano: false } })).json.error).toMatch(/al menos una/);
+    // Con "Desde fotos" apagado no se puede leer.
+    expect((await pedir("POST", "/lector", { fotos: [FOTO] })).status).toBe(403);
+    await pedir("PUT", "/lector", { modos: { fotos: true, pegar: true } });
+  });
+
   it("formas de respuesta de Workers AI", () => {
     expect(textoDeCloudflare({ response: "hola" })).toBe("hola");
     expect(textoDeCloudflare({ response: { a: 1 } })).toBe('{"a":1}');
