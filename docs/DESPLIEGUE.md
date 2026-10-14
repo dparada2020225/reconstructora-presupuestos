@@ -39,13 +39,25 @@ Nombre del Worker y configuración: `wrangler.jsonc` (assets del SPA con
 2. **Access controls → Policies → Add a policy**: *Allow*, **Include → Everyone**, sesión de 1 mes
    (nombre sugerido: "Cualquier correo verificado (la app autoriza)"). Access solo **identifica**;
    quién entra lo decide la app (tabla `usuarios`).
-3. En el dashboard: **Workers → reconstructora-presupuestos → Access → Protect this Worker**: alcance
-   *All traffic*, con la política del paso 2.
+3. Aplicación de Access **solo para la ruta `/acceso`** (el resto de la app es público y la app
+   pide sesión; así también pueden entrar los usuarios con contraseña):
+   **Zero Trust → Access → Applications → Add an application → Self-hosted**, dominio
+   `reconstructora-presupuestos.<cuenta>.workers.dev`, **path `acceso`**, con la política del paso 2.
+   (Si antes se usó *Workers → Access → Protect this Worker* con *All traffic*, esa aplicación cubre
+   todo: editar su dominio para agregarle el path `acceso`, o borrarla y crear la nueva.)
 4. Métodos de login: *One-time PIN* (código al correo) viene activo. Google se agrega en el paso 4.
-5. Copiar el **dominio del equipo** y el **AUD tag** de la aplicación de Access a `vars` en
+5. Copiar el **dominio del equipo** y el **AUD tag** de esa aplicación de Access a `vars` en
    `wrangler.jsonc` (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`). No son secretos; van en el archivo porque
-   `wrangler deploy` borra las variables de texto creadas en el dashboard.
-6. Los demás usuarios entran, quedan **pendientes** y el admin los autoriza en la página *Usuarios*.
+   `wrangler deploy` borra las variables de texto creadas en el dashboard. Si se crea una aplicación
+   nueva, su AUD es otro: actualizarlo y hacer push.
+6. **Secreto de la sesión** (firma la cookie con la que la app recuerda quién entró):
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))" | npx wrangler secret put SESSION_SECRET
+   ```
+   Cambiarlo cierra la sesión de todos.
+7. Los demás usuarios entran con Google o código, quedan **pendientes** y el admin los autoriza en
+   *Usuarios*. A quien no puede entrar así, el admin le crea un **usuario con contraseña** ahí mismo
+   (o con `npm run usuarios:clave:produccion`).
 
 ## 4. Login con Google (opcional, recomendado)
 
@@ -109,11 +121,11 @@ en [ETL.md](ETL.md).
 |---|---|
 | Código, migraciones, documentación | GitHub (repo público) |
 | App publicada | Cloudflare Workers (`*.workers.dev`) |
-| Login | Cloudflare Zero Trust (Access) + Google OAuth |
+| Login | Cloudflare Zero Trust (Access, solo en `/acceso`) + Google OAuth; contraseñas en la tabla `usuarios` (solo el hash) |
 | Datos | Neon (`production`, `dev`) |
 | Respaldo por presupuesto | Google Sheets "Respaldo presupuestos" (Drive del admin) |
 | Copias de toda la base | Compu / Drive del admin (fuera del repo) |
-| Secretos de production | Secretos del Worker (`DATABASE_URL`, `GOOGLE_*`, `SHEETS_RESPALDO_ID`) |
+| Secretos de production | Secretos del Worker (`DATABASE_URL`, `SESSION_SECRET`, `GOOGLE_*`, `SHEETS_RESPALDO_ID`) |
 | Secretos de local | `.env`, `.dev.vars` |
 | Llave JSON de la cuenta de servicio | Compu del admin, fuera del repo |
 | Excel históricos, `overrides.json`, `historico.json` | Carpeta padre del repo / `../_etl` |

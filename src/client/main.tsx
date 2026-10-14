@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiError } from "./api";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
@@ -8,6 +9,7 @@ import { Ajustes } from "./pages/Ajustes";
 import { Bus } from "./pages/Bus";
 import { Buses } from "./pages/Buses";
 import { Cliente } from "./pages/Cliente";
+import { Entrar } from "./pages/Entrar";
 import { Clientes } from "./pages/Clientes";
 import { Estadisticas } from "./pages/Estadisticas";
 import { Inicio } from "./pages/Inicio";
@@ -20,10 +22,12 @@ import { Trabajo } from "./pages/Trabajo";
 import { Usuarios } from "./pages/Usuarios";
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+  // Los 4xx (sin sesión, sin permiso, no existe) no se reintentan.
+  defaultOptions: { queries: { staleTime: 30_000, retry: (n, e) => n < 1 && !(e instanceof ApiError && e.status < 500) } },
 });
 
 const router = createBrowserRouter([
+  { path: "/entrar", element: <Entrar /> },
   {
     path: "/",
     element: <Layout />,

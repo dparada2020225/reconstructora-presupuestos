@@ -1,8 +1,12 @@
 # Copia este archivo a `.dev.vars` (NO se sube a git). Variables para `npm run dev`.
 DATABASE_URL="postgresql://usuario:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
-# Solo en local: simula el usuario logueado (en producción lo da Cloudflare Access).
+# Solo en local: simula el usuario logueado (en producción hay que entrar en /entrar).
 DEV_AUTH_EMAIL="tu-correo@gmail.com"
+
+# Firma de la cookie de sesión (mínimo 32 caracteres). Solo hace falta en local para probar el
+# login sin DEV_AUTH_EMAIL. En producción es un secreto del Worker (wrangler secret put SESSION_SECRET).
+# SESSION_SECRET=""
 
 # Producción (secretos con `wrangler secret put`; aquí quedan vacíos).
 # ACCESS_TEAM_DOMAIN y ACCESS_AUD están en wrangler.jsonc (no son secretos) y en local

@@ -56,7 +56,7 @@ actualizar la doc que corresponda** (endpoints → API.md, tablas → BASE-DE-DA
 | Frontend | React 19 + Vite 8 + TypeScript + Tailwind 4 + TanStack Query + React Router |
 | API | Hono en Cloudflare Workers (mismo Worker sirve el SPA y `/api/*`) |
 | Base de datos | Postgres en Neon (plan gratis) + Drizzle ORM (driver HTTP `neon-http` en el Worker, `postgres-js` en scripts) |
-| Login | Cloudflare Access delante de la app (cualquier correo puede identificarse); el Worker verifica el JWT (`Cf-Access-Jwt-Assertion`) y solo deja pasar correos `activo` en `usuarios`. En local, `DEV_AUTH_EMAIL` en `.dev.vars`. |
+| Login | Página `/entrar` con dos formas: Google/código (Cloudflare Access protege SOLO `/acceso`; el Worker verifica el JWT y abre sesión) o correo+contraseña (`POST /api/sesion`, PBKDF2 en `shared/clave.ts`). Ambas dan la cookie `sesion` (JWT HS256 con `SESSION_SECRET`, 30 días). Solo pasan usuarios `activo`. Quien tiene contraseña solo entra con contraseña. En local, `DEV_AUTH_EMAIL` en `.dev.vars`. |
 | Respaldo | Google Sheets API con cuenta de servicio: una pestaña por presupuesto, copiando la plantilla con el formato de siempre (fase 5) |
 | Deploy | Cloudflare Workers Builds conectado a GitHub: push a `main` → build → deploy |
 | Tests | Vitest; PGlite para probar migraciones y carga sin Postgres real |
@@ -103,6 +103,7 @@ npm run configurar:produccion  # pide la URL de production: migra, siembra y la 
 npm run configurar:google # pide el .json de la cuenta de servicio y el link del Sheets de respaldo → .dev.vars + secretos
 npm run db:copia          # copia de toda la base (.env) → ../copias/*.json   (db:copia:produccion pide la URL)
 npm run db:restaurar -- <archivo.json> [--produccion]  # reemplaza TODA la base por la copia (pide RESTAURAR)
+npm run usuarios:clave    # crea/actualiza un usuario con contraseña ya autorizado (usuarios:clave:produccion pide la URL)
 ```
 
 ## ETL del histórico (fase 1)
@@ -213,6 +214,14 @@ Ver `docs/PLAN.md`. Actual:
     Probado con PGlite (`src/worker/copia-base.test.ts`) y con Postgres 16 real (postgres-js).
 
 ## Decisiones (más reciente arriba)
+
+- 2026-10-13 — Tercera forma de entrar: correo y contraseña, para quien no puede usar Google ni
+  recibir el código. Access pasa a proteger solo `/acceso`; la app maneja su propia sesión (cookie
+  firmada) para todos. Contraseñas con PBKDF2-SHA256 (30 000 iteraciones ≈ 5 ms, cabe en el CPU del
+  Worker gratis), bloqueo de 15 min tras 5 intentos, y **no se pueden ver** (el admin solo las cambia).
+  Un usuario con contraseña no puede entrar por Access: su correo en Google podría ser de otra
+  persona. Migración 0006. Rutas `/api/sesion`, `/acceso`, `POST /api/usuarios`, `PUT|DELETE
+  /api/usuarios/:id/clave`; página `/entrar`; pruebas en `src/worker/sesion.test.ts`.
 
 - 2026-10-07 — Fase 6. Compartir con el menú del sistema (no `wa.me`: solo manda texto y el PDF tendría que
   estar en un link público). La copia de la base NO se sube sola a Drive: las cuentas de servicio no tienen

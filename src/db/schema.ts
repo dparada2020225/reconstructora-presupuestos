@@ -66,6 +66,15 @@ export const usuarios = pgTable("usuarios", {
   nombre: text("nombre").notNull(),
   rol: rolUsuario("rol").notNull().default("usuario"),
   estado: estadoUsuario("estado").notNull().default("pendiente"),
+  /**
+   * Contraseña (hash PBKDF2, ver shared/clave.ts) para quien entra con correo y contraseña en vez de
+   * Google o código al correo. Si tiene, SOLO puede entrar con contraseña.
+   */
+  claveHash: text("clave_hash"),
+  /** Sube cada vez que cambia la contraseña: invalida las sesiones abiertas. */
+  claveVersion: integer("clave_version").notNull().default(0),
+  intentosFallidos: integer("intentos_fallidos").notNull().default(0),
+  bloqueadoHasta: timestamp("bloqueado_hasta", { withTimezone: true }),
   ...timestamps,
 });
 

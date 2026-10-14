@@ -24,6 +24,8 @@
     "db:copia": "tsx scripts/copia-base.ts",
     "db:copia:produccion": "tsx scripts/copia-base.ts --produccion",
     "db:restaurar": "tsx scripts/restaurar-base.ts",
+    "usuarios:clave": "tsx scripts/usuario-clave.ts",
+    "usuarios:clave:produccion": "tsx scripts/usuario-clave.ts --produccion",
     "etl:load:produccion": "tsx scripts/etl/load.ts --produccion"
   },
   "dependencies": {

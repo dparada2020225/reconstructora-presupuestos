@@ -6,10 +6,12 @@ Los tipos que usa el cliente están en `src/client/api.ts` y los de entrada en
 
 ## Autenticación
 
-- En producción, Cloudflare Access pone el JWT en `Cf-Access-Jwt-Assertion`; el Worker lo verifica
-  y busca el correo en `usuarios` (ver [ARQUITECTURA.md](ARQUITECTURA.md#autenticación-y-permisos)).
+- La API usa la **cookie de sesión** `sesion` que se abre en `/acceso` (Google o código, detrás de
+  Cloudflare Access) o en `POST /api/sesion` (correo y contraseña). Ver
+  [ARQUITECTURA.md](ARQUITECTURA.md#autenticación-y-permisos).
 - En local, `DEV_AUTH_EMAIL` (`.dev.vars`) hace de usuario.
-- Todas las rutas salvo `/health` exigen un usuario **activo**. Las marcadas **admin** exigen rol admin.
+- Todas las rutas salvo `/health` y `/sesion` exigen un usuario **activo**. Las marcadas **admin**
+  exigen rol admin.
 
 ## Errores
 
@@ -17,7 +19,8 @@ Los tipos que usa el cliente están en `src/client/api.ts` y los de entrada en
 |---|---|---|
 | 400 | Datos inválidos (zod) o id inválido | `{ error: "mensajes · separados", detalles? }` |
 | 401 | Sin identidad (sin JWT válido) | `{ error: "No autenticado" }` |
-| 403 | Usuario `pendiente` / `denegado`, o sin rol | `{ error: "pendiente" \| "denegado" \| "Sin permiso" }` |
+| 403 | Usuario `pendiente` / `denegado`, sin rol, o usuario con contraseña que llegó por Access | `{ error: "pendiente" \| "denegado" \| "Sin permiso" \| "con-clave" }` |
+| 429 | Usuario bloqueado por intentos fallidos | `{ error: "Demasiados intentos. Espera N minutos…" }` |
 | 404 | No existe | `{ error: "… no encontrado" }` |
 | 409 | Conflicto (ya existe, tiene trabajos, no es borrador…) | `{ error: "…" }` |
 | 502 / 503 | Google falló / respaldo no configurado | `{ error: "…" }` |
@@ -30,13 +33,19 @@ Montos: números en quetzales (2 decimales). Fechas: `AAAA-MM-DD`. Timestamps: I
 |---|---|---|
 | GET | `/health` | **Público.** `{ ok, db }` (503 si la base no responde). |
 | GET | `/me` | El usuario actual `{ id, email, nombre, rol }`. |
+| POST | `/sesion` | **Público.** Entrar con `{ email, clave }` → abre la cookie de sesión. 401 si no coincide, 429 si está bloqueado (5 intentos → 15 min). |
+| DELETE | `/sesion` | Salir: borra la cookie. |
+| GET | `/acceso` (fuera de `/api`) | Detrás de Cloudflare Access: verifica su JWT, abre la sesión y redirige a `/` (o a `/entrar?error=…`). |
 
 ## Usuarios (admin)
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| GET | `/usuarios` | Todos, con `estado` y `creadoEn`. |
+| GET | `/usuarios` | Todos, con `estado`, `creadoEn`, `conClave` y `bloqueadoHasta` (nunca el hash). |
+| POST | `/usuarios` | Usuario con contraseña, ya autorizado: `{ email, nombre, clave, rol? }` (correo o usuario sin espacios; contraseña de 8 a 100). 409 si ya existe. |
 | PATCH | `/usuarios/:id` | `{ estado?: "pendiente"\|"activo"\|"denegado", rol?: "admin"\|"usuario", nombre? }`. No te puedes quitar el acceso ni el rol de admin a ti mismo. |
+| PUT | `/usuarios/:id/clave` | Poner o cambiar la contraseña `{ clave }`. Desbloquea y cierra sus sesiones abiertas. |
+| DELETE | `/usuarios/:id/clave` | Quitar la contraseña (vuelve a entrar solo con Google o código). |
 
 ## Presupuestos
 

@@ -22,7 +22,7 @@ Google Sheets** y hay **estadísticas** de todo el histórico.
 | **Clientes, buses y productos** | Búsqueda, edición, unir repetidos y sugerencias de posibles repetidos; historial de precios por producto. |
 | **Búsqueda global** | Ctrl+K (o /) desde cualquier página: presupuestos, clientes, buses y productos. |
 | **Estadísticas** | Montos por año, temporada, clientes, lo más pedido, evolución de precios, categorías, extras, rebaja al cerrar. |
-| **Accesos** | Cualquiera se identifica (Google o código al correo); queda pendiente hasta que el admin lo autoriza. |
+| **Accesos** | Dos formas de entrar: Google o código al correo (queda pendiente hasta que el admin lo autoriza), o correo y contraseña para usuarios que crea el admin (se pueden cambiar, no ver). |
 | **Copias de la base** | Descarga de toda la base en JSON (con recordatorio mensual) y restauración con un comando. |
 
 Todo funciona en **planes gratuitos** (Cloudflare Workers + Access, Neon, Google Cloud).
@@ -49,7 +49,7 @@ Todo funciona en **planes gratuitos** (Cloudflare Workers + Access, Neon, Google
 | Frontend | React 19, Vite, TypeScript, Tailwind 4, TanStack Query, React Router |
 | API | Hono en Cloudflare Workers (el mismo Worker sirve la app y `/api/*`) |
 | Base de datos | Postgres en Neon + Drizzle ORM |
-| Login | Cloudflare Access (Google o código al correo) + verificación del JWT y tabla de usuarios en el Worker |
+| Login | Cloudflare Access en `/acceso` (Google o código al correo) o correo y contraseña (PBKDF2); sesión propia en cookie firmada |
 | PDF | pdf-lib en el navegador |
 | Respaldo | Google Sheets API con cuenta de servicio |
 | Deploy | Cloudflare Workers Builds: cada push a `main` se publica solo |
@@ -90,6 +90,7 @@ En local no hay login: `DEV_AUTH_EMAIL` dice quién eres. Para montar producció
 | `npm run db:seed-usuarios` | Registra los usuarios de `SEED_USUARIOS` como activos |
 | `npm run db:copia` / `db:copia:produccion` | Copia de toda la base a `../copias` (JSON) |
 | `npm run db:restaurar -- <archivo> [--produccion]` | Reemplaza la base por una copia (pide escribir RESTAURAR) |
+| `npm run usuarios:clave` / `usuarios:clave:produccion` | Crea o actualiza un usuario que entra con contraseña (ya autorizado) |
 | `npm run configurar:produccion` | Primera vez: migra production, siembra usuarios y guarda la URL como secreto del Worker |
 | `npm run configurar:google` | Respaldo en Sheets: lee la llave `.json` y el link del archivo y guarda los secretos |
 | `npm run etl:parse` | Lee los Excel históricos (fuera del repo) y genera `../_etl/` |
@@ -110,7 +111,7 @@ Commits sin coautoría (sin `Co-Authored-By`); el autor es el dueño del repo.
 |---|---|
 | `.env` (local, ignorado) | `DATABASE_URL` (dev), `SEED_USUARIOS`, `DATA_DIR`, `ETL_OUT_DIR`, `COPIAS_DIR` (opcional) |
 | `.dev.vars` (local, ignorado) | `DATABASE_URL` (dev), `DEV_AUTH_EMAIL`; y los `GOOGLE_*` / `SHEETS_RESPALDO_ID` si se usa el respaldo en local |
-| Secretos del Worker | `DATABASE_URL` (production), `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SHEETS_RESPALDO_ID` |
+| Secretos del Worker | `DATABASE_URL` (production), `SESSION_SECRET`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SHEETS_RESPALDO_ID` |
 | `wrangler.jsonc` → `vars` | `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` (públicos) |
 | Página **Ajustes** (admin) | Membrete del PDF (empresa, correo, teléfono, firma, lugar, nota), logo e íconos de redes. Se guarda en la base (una vez en dev y otra en production) |
 

@@ -22,10 +22,16 @@ abonos). No hace falta saber nada técnico.
 ## Entrar a la app
 
 1. Abre el link de la app (el administrador te lo pasa). Funciona en la compu y en el celular.
-2. Pide tu correo. Puedes entrar con **Google** o con un **código** que llega al correo.
-3. La primera vez vas a ver el aviso **"Tu solicitud de acceso quedó registrada"**: el administrador tiene que autorizarte
+2. Hay dos formas de entrar:
+   - **Entrar con Google o con código al correo**: eliges tu cuenta de Google o te llega un código
+     al correo.
+   - **Con contraseña**: si el administrador te creó un usuario, escribe tu correo (o usuario) y tu
+     contraseña. Si se te olvida, él te pone una nueva (nadie la puede ver, ni él). Si te equivocas 5
+     veces seguidas, espera 15 minutos o pídele que te la cambie.
+3. Arriba a la derecha está **Salir**.
+4. Con Google o código, la primera vez vas a ver el aviso **"Tu solicitud de acceso quedó registrada"**: el administrador tiene que autorizarte
    en la página *Usuarios*. Cuando lo haga, recarga la página y ya entras.
-4. La sesión dura un mes; después vuelve a pedir el correo.
+5. La sesión dura un mes; después vuelve a pedir que entres.
 
 ## Cómo está organizada
 
@@ -157,8 +163,14 @@ No cuentan los borradores ni los cancelados.
 ## Solo para el administrador
 
 ### Usuarios
-Quien entra por primera vez aparece como **pendiente**. Ahí se **Autoriza** o se **Niega**; a
-alguien activo se le puede **Quitar acceso**.
+- Quien entra por primera vez con Google o código aparece como **pendiente**. Ahí se **Autoriza** o
+  se **Niega**; a alguien activo se le puede **Quitar acceso**.
+- **+ Usuario con contraseña**: para quien no puede entrar con Google ni recibir el código. Nombre,
+  correo (o un usuario simple como "nelson") y contraseña. Queda autorizado de una vez. Anota la
+  contraseña y dásela: después no se puede ver.
+- **Cambiar contraseña**: si a alguien se le olvidó o quedó bloqueado. **Poner contraseña** a alguien
+  que entraba con Google hace que desde ahora entre solo con contraseña. **Quitar contraseña** lo
+  regresa a Google o código.
 Todos los autorizados pueden hacer lo mismo; el administrador además maneja Usuarios y Ajustes.
 
 ### Ajustes
@@ -190,6 +202,11 @@ La tecla `?` muestra esta lista en la app. Los de una sola tecla no funcionan mi
 ## Preguntas frecuentes
 
 **Me sale "Tu solicitud de acceso quedó registrada".** El administrador todavía no te autoriza. Avísale.
+
+**Se me olvidó la contraseña.** Pídele al administrador que te ponga una nueva en *Usuarios*.
+
+**"Ese correo entra con contraseña".** Tu usuario tiene contraseña: usa la parte de abajo de la
+pantalla de entrar, no el botón de Google.
 
 **Me sale "denegado".** El administrador negó el acceso a ese correo.
 

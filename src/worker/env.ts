@@ -12,6 +12,8 @@ export interface Env {
   GOOGLE_SERVICE_ACCOUNT_EMAIL?: string;
   GOOGLE_PRIVATE_KEY?: string;
   SHEETS_RESPALDO_ID?: string;
+  /** Firma de la cookie de sesión (mínimo 32 caracteres). Secreto del Worker y .dev.vars. */
+  SESSION_SECRET?: string;
 }
 
 export interface Usuario {

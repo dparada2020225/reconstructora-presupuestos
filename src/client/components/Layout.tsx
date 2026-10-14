@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import { NavLink, Outlet } from "react-router";
-import { api, type Usuario } from "../api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Navigate, NavLink, Outlet } from "react-router";
+import { api, ApiError, enviar, type Usuario } from "../api";
 import { BusquedaGlobal } from "./BusquedaGlobal";
 
 const enlaces = [
@@ -13,7 +13,17 @@ const enlaces = [
 ];
 
 export function Layout() {
-  const { data: usuario } = useQuery({ queryKey: ["me"], queryFn: () => api<Usuario>("/me") });
+  const qc = useQueryClient();
+  const { data: usuario, error } = useQuery({ queryKey: ["me"], queryFn: () => api<Usuario>("/me") });
+  // Sin sesión → a la página de entrar.
+  if (error instanceof ApiError && error.status === 401) return <Navigate to="/entrar" replace />;
+  if (error instanceof ApiError && error.message === "con-clave") return <Navigate to="/entrar?error=con-clave" replace />;
+
+  async function salir() {
+    await enviar("DELETE", "/sesion").catch(() => {});
+    qc.clear();
+    window.location.href = "/entrar";
+  }
 
   return (
     <div className="min-h-dvh">
@@ -27,9 +37,14 @@ export function Layout() {
             <BusquedaGlobal />
           </div>
           {usuario && (
-            <span className="text-sm text-marca-100">
-              {usuario.nombre}
-              {usuario.rol === "admin" && <span className="ml-2 rounded bg-marca-600 px-1.5 py-0.5 text-xs">admin</span>}
+            <span className="flex items-center gap-2 text-sm text-marca-100">
+              <span>
+                {usuario.nombre}
+                {usuario.rol === "admin" && <span className="ml-2 rounded bg-marca-600 px-1.5 py-0.5 text-xs">admin</span>}
+              </span>
+              <button type="button" onClick={salir} className="rounded px-2 py-1 text-marca-100 hover:bg-marca-600 hover:text-white">
+                Salir
+              </button>
             </span>
           )}
         </div>

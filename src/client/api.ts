@@ -25,7 +25,7 @@ export const enviar = <T = { ok: true }>(metodo: "POST" | "PUT" | "PATCH" | "DEL
 export type Rol = "admin" | "usuario";
 export type EstadoUsuario = "pendiente" | "activo" | "denegado";
 export type Usuario = { id: number; email: string; nombre: string; rol: Rol };
-export type UsuarioAdmin = Usuario & { estado: EstadoUsuario; creadoEn: string };
+export type UsuarioAdmin = Usuario & { estado: EstadoUsuario; creadoEn: string; conClave: boolean; bloqueadoHasta: string | null };
 
 import type { EstadoPresupuesto, EstadoTrabajo, FormaPago } from "../shared/estados";
 export type { EstadoPresupuesto, EstadoTrabajo, FormaPago };

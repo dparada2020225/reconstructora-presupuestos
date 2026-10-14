@@ -41,9 +41,19 @@ versión nueva traía una migración, el código viejo sigue funcionando con col
 
 ## Usuarios y accesos
 
-- Quien entra por primera vez queda **pendiente**; el admin lo autoriza en *Usuarios*.
-- Para quitarle el acceso a alguien: *Usuarios → Quitar acceso*. (Access lo sigue identificando, pero
-  la app lo rechaza.)
+- Quien entra por primera vez con Google o código queda **pendiente**; el admin lo autoriza en *Usuarios*.
+- **Usuarios con contraseña** (para quien no puede entrar con Google ni recibe el código): *Usuarios →
+  + Usuario con contraseña* (queda autorizado de una vez), o en la terminal
+  `npm run usuarios:clave:produccion`. Entran en `/entrar` con su correo (o usuario) y contraseña.
+  - **Se le olvidó**: *Usuarios → Cambiar contraseña* y dale la nueva. Las contraseñas **no se pueden
+    ver** (solo se guarda su hash); cambiarla también lo desbloquea y le cierra las sesiones abiertas.
+  - 5 intentos fallidos seguidos bloquean ese usuario 15 minutos (sale en *Usuarios*).
+  - Quien tiene contraseña **solo** entra con contraseña (no con Google), para que nadie más con
+    ese mismo correo en Google pueda entrar como él. *Quitar contraseña* lo devuelve a Google/código.
+  - La app está abierta a internet (solo `/acceso` pasa por Cloudflare): usar contraseñas que no
+    sean fáciles de adivinar, sobre todo para el admin.
+- Para quitarle el acceso a alguien: *Usuarios → Quitar acceso* (la app lo rechaza en la siguiente
+  petición, tenga sesión abierta o no).
 - Para hacer admin a alguien más: hoy se cambia el `rol` en la tabla `usuarios` (Neon → SQL Editor:
   `update usuarios set rol = 'admin' where email = '…';`) o con `PATCH /api/usuarios/:id`.
 - El admin no se puede quitar a sí mismo el acceso ni el rol desde la app.
@@ -99,6 +109,7 @@ en el repo** (`check:privacidad` y `.gitignore` bloquean `copia-base*.json` y `c
 |---|---|---|
 | `DATABASE_URL` de production | Secreto del Worker | Neon → *Reset password* de la rama → `npx wrangler secret put DATABASE_URL` (o `npm run configurar:produccion`) |
 | `DATABASE_URL` de dev | `.env` y `.dev.vars` (locales) | Editar los archivos |
+| `SESSION_SECRET` (firma de las sesiones) | Secreto del Worker y `.dev.vars` | Generar uno nuevo (ver DESPLIEGUE.md, paso de Access) y `npx wrangler secret put SESSION_SECRET`. Cierra la sesión de todos. |
 | Llave de la cuenta de servicio de Google | Secreto del Worker (`GOOGLE_PRIVATE_KEY`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`) y `.dev.vars` | Google Cloud → IAM → Cuentas de servicio → *Claves*: crear una nueva JSON, `npm run configurar:google`, y **borrar la vieja** |
 | Id del archivo de respaldo | Secreto `SHEETS_RESPALDO_ID` | `npm run configurar:google` |
 | `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` | `wrangler.jsonc` → `vars` (no son secretos) | Editar el archivo y push |
@@ -126,6 +137,12 @@ arriba. Nunca pegar secretos en issues, commits ni chats.
 | "Tu acceso a la app fue denegado" | Usuario denegado | El admin lo cambia en Usuarios. |
 | Con Google no entra, con PIN sí | App de OAuth "en prueba" | Google Cloud → Pantalla de consentimiento → *Publicar app*. |
 | "No autenticado" en local | Falta `DEV_AUTH_EMAIL` en `.dev.vars` | Agregarlo y reiniciar `npm run dev`. |
+| "Correo o contraseña incorrectos" | Contraseña mal escrita, o ese usuario no tiene contraseña | El admin le pone una nueva en Usuarios. |
+| "Demasiados intentos. Espera…" | 5 intentos fallidos seguidos | Esperar 15 minutos, o el admin le cambia la contraseña (desbloquea). |
+| "Ese correo entra con contraseña" al usar Google | Ese usuario tiene contraseña | Que use la opción de contraseña, o *Quitar contraseña*. |
+| "No se pudo entrar con Google o con el código" | Access no protege `/acceso` o el AUD no coincide | Revisar la aplicación de Access (path `acceso`) y `ACCESS_AUD` en `wrangler.jsonc`. |
+| Error 500 al entrar con contraseña / "Falta SESSION_SECRET" | No se configuró el secreto | `npx wrangler secret put SESSION_SECRET` (ver DESPLIEGUE.md). |
+| Todos tienen que volver a entrar | Se cambió `SESSION_SECRET` | Normal. |
 | `npm run dev` o wrangler fallan raro | Node 20 | `nvm use 24` (ver `.nvmrc`). |
 | Partes nuevas fallan después de un push | Migración no aplicada a production | `npm run db:migrate:produccion`. |
 | "Base de datos: Sin conexión" en Inicio | Neon caída o URL mala | Revisar Neon; `GET /api/health`; el secreto `DATABASE_URL`. |

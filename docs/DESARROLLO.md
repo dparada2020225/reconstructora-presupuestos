@@ -43,7 +43,8 @@ En local no hay login: `DEV_AUTH_EMAIL` dice quién eres. Para el respaldo en Sh
 | `SEED_USUARIOS` | `.env` | `correo:rol:Nombre;…` para `db:seed-usuarios`. |
 | `DATA_DIR`, `ETL_OUT_DIR` | `.env` | Carpeta de los Excel y salida del ETL (fuera del repo). |
 | `COPIAS_DIR` | `.env` (opcional) | Dónde deja `db:copia` las copias (por defecto `../copias`). |
-| `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` | `wrangler.jsonc` → `vars` | Verificar el JWT de Cloudflare Access. |
+| `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` | `wrangler.jsonc` → `vars` | Verificar el JWT de Cloudflare Access (en `/acceso`). |
+| `SESSION_SECRET` | Secreto del Worker y `.dev.vars` (mínimo 32 caracteres) | Firma la cookie de sesión. En local solo hace falta para probar el login sin `DEV_AUTH_EMAIL`. |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SHEETS_RESPALDO_ID` | Secretos del Worker y `.dev.vars` | Respaldo en Sheets (`npm run configurar:google`). |
 
 ## Comandos
@@ -64,6 +65,7 @@ En local no hay login: `DEV_AUTH_EMAIL` dice quién eres. Para el respaldo en Sh
 | `npm run etl:parse` / `etl:load` / `etl:load:produccion` | Histórico ([ETL.md](ETL.md)). |
 | `npm run configurar:produccion` | Primera vez: migra, siembra y guarda `DATABASE_URL` de production como secreto. |
 | `npm run configurar:google` | Llave de la cuenta de servicio + link del Sheets → `.dev.vars` y secretos. |
+| `npm run usuarios:clave` / `usuarios:clave:produccion` | Crea o actualiza un usuario con contraseña (ya autorizado). |
 | `npm run cf-typegen` | Tipos de los bindings de Wrangler. |
 
 ## Estructura

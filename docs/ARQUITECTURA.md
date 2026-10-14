@@ -43,19 +43,36 @@ El plan gratis de Workers da muy poca CPU por petición. Por eso:
 
 ## Autenticación y permisos
 
-1. **Cloudflare Access** protege todo el Worker. Su política deja pasar a *cualquier* correo
-   verificado (Google o PIN): Access solo **identifica**.
-2. El Worker (`src/worker/middleware/auth.ts`) verifica el JWT de Access contra las llaves públicas
-   del equipo (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`) y saca el correo.
-3. La app **autoriza**: busca el correo en `usuarios`.
-   - No existe → lo crea como `pendiente` y responde 403 `pendiente`.
-   - `pendiente` o `denegado` → 403 con ese estado (la SPA muestra el aviso).
-   - `activo` → sigue, con `c.var.usuario`.
-4. Roles: `usuario` (todo) y `admin` (además Usuarios, Ajustes del membrete, respaldo "rehacer"
-   y copia de la base). `requiereRol("admin")` protege esas rutas.
-5. En local no hay Access: `DEV_AUTH_EMAIL` en `.dev.vars` hace de usuario logueado.
+Hay dos formas de entrar, y las dos terminan en la **misma sesión de la app** (cookie `sesion`,
+JWT HS256 firmado con `SESSION_SECRET`, `HttpOnly`, `SameSite=Lax`, 30 días):
 
-`/api/health` es la única ruta pública (prueba la base con `select 1`).
+```
+/entrar ─┬─ "Google o código" ─▶ /acceso  (Cloudflare Access protege SOLO esta ruta)
+         │                         └▶ el Worker verifica el JWT de Access, abre la sesión → /
+         └─ correo + contraseña ─▶ POST /api/sesion (hash PBKDF2) → abre la sesión → /
+```
+
+1. **Cloudflare Access** protege solo `/acceso`. Su política deja pasar a *cualquier* correo
+   verificado (Google o PIN): Access solo **identifica**. El Worker verifica su JWT
+   (`Cf-Access-Jwt-Assertion`) con las llaves del equipo (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`).
+2. **Contraseña** (`src/worker/routes/sesion.ts`): para quien no tiene cómo entrar con Google o
+   correo. El admin la crea en *Usuarios* (o `npm run usuarios:clave`). Se guarda solo el hash
+   PBKDF2-SHA256 con sal (`src/shared/clave.ts`, 30 000 iteraciones ≈ 5 ms de CPU); **no se puede
+   ver**, solo cambiar. 5 intentos fallidos seguidos bloquean ese usuario 15 minutos. Si el correo no
+   existe se calcula un hash igual (no se delata qué correos existen).
+3. **Quien tiene contraseña solo entra con contraseña**: Access no lo deja pasar (su correo en
+   Google podría ser de otra persona).
+4. La app **autoriza** en cada petición (`src/worker/middleware/auth.ts`): `DEV_AUTH_EMAIL` en local;
+   si no, la cookie de sesión (y que `clave_version` coincida: cambiar la contraseña cierra las
+   sesiones abiertas); y por compatibilidad, el JWT de Access si viene en la petición.
+   - No existe → (Access) se crea como `pendiente` → 403 `pendiente`.
+   - `pendiente` o `denegado` → 403 con ese estado (la SPA muestra el aviso).
+   - Sin sesión → 401 y la SPA manda a `/entrar`.
+5. Roles: `usuario` (todo) y `admin` (además Usuarios, Ajustes del membrete, respaldo "rehacer"
+   y copia de la base). `requiereRol("admin")` protege esas rutas.
+
+Rutas públicas: `/api/health`, `/api/sesion` y los archivos del SPA (que no tienen datos).
+`/acceso` lo cuida Access.
 
 ## Cliente (src/client)
 

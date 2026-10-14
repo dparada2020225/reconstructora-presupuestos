@@ -4,7 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
 import type { Db } from "../db/tipos";
 import type { AppEnv, Env } from "./env";
-import { requiereUsuario } from "./middleware/auth";
+import { emailDeAccess, requiereUsuario, usuarioDeAccess } from "./middleware/auth";
 import { rutasBuses } from "./routes/buses";
 import { rutasClientes } from "./routes/clientes";
 import { rutasConfiguracion } from "./routes/configuracion";
@@ -12,8 +12,10 @@ import { rutasCopia } from "./routes/copia";
 import { rutasEstadisticas } from "./routes/estadisticas";
 import { rutasPresupuestos } from "./routes/presupuestos";
 import { rutasProductos } from "./routes/productos";
+import { rutasSesion } from "./routes/sesion";
 import { rutasTrabajos } from "./routes/trabajos";
 import { rutasUsuarios } from "./routes/usuarios";
+import { abrirSesion } from "./sesion";
 
 /** Código de Postgres para "ya existe" (índice único). Drizzle a veces lo envuelve en `cause`. */
 function esDuplicado(err: unknown): boolean {
@@ -21,13 +23,33 @@ function esDuplicado(err: unknown): boolean {
   return e?.code === "23505" || e?.cause?.code === "23505";
 }
 
-/** La API completa. Recibe cómo obtener la base para poder probarla con PGlite. */
+/**
+ * La app del Worker: `/acceso` (entrada con Google o código, detrás de Cloudflare Access) y la API
+ * en `/api/*`. Recibe cómo obtener la base para poder probarla con PGlite.
+ */
 export function crearApp(obtenerDb: (env: Env) => Db) {
+  const raiz = new Hono<AppEnv>();
   const app = new Hono<AppEnv>().basePath("/api");
 
-  app.use("*", async (c, next) => {
+  raiz.use("*", async (c, next) => {
     c.set("db", obtenerDb(c.env));
     await next();
+  });
+
+  /**
+   * Cloudflare Access protege SOLO esta ruta: quien llega aquí ya se identificó con Google o con
+   * el código al correo. Se le abre la sesión de la app y se le manda al inicio. Quien tiene
+   * contraseña no entra por aquí (su correo en Google podría ser de otra persona).
+   */
+  raiz.get("/acceso", async (c) => {
+    if (c.env.DEV_AUTH_EMAIL) return c.redirect("/");
+    const email = await emailDeAccess(c.req.raw, c.env);
+    if (!email) return c.redirect("/entrar?error=acceso");
+    const u = await usuarioDeAccess(c.var.db, email);
+    if (!u) return c.redirect("/entrar?error=acceso");
+    if (u.claveHash) return c.redirect("/entrar?error=con-clave");
+    await abrirSesion(c, u);
+    return c.redirect("/");
   });
 
   /** Público: lo usa el monitoreo para saber si la app y la base responden. */
@@ -40,6 +62,7 @@ export function crearApp(obtenerDb: (env: Env) => Db) {
     }
   });
 
+  app.route("/sesion", rutasSesion);
   app.use("*", requiereUsuario);
 
   app.get("/me", (c) => c.json(c.var.usuario));
@@ -63,5 +86,7 @@ export function crearApp(obtenerDb: (env: Env) => Db) {
   });
 
   app.notFound((c) => c.json({ error: "No encontrado" }, 404));
-  return app;
+  raiz.route("/", app);
+  raiz.notFound((c) => c.json({ error: "No encontrado" }, 404));
+  return raiz;
 }

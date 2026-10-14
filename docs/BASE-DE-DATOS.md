@@ -24,9 +24,12 @@ configuracion (clave → valor)        duplicados_descartados (tipo, a_id, b_id)
 ## Tablas
 
 ### `usuarios`
-Quién puede entrar. `email` único, `nombre`, `rol` (`admin` | `usuario`), `estado`
-(`pendiente` | `activo` | `denegado`), `creado_en`, `actualizado_en`.
-El primero se siembra con `npm run db:seed-usuarios`; los demás se crean solos como `pendiente`.
+Quién puede entrar. `email` único (correo o usuario, en minúsculas), `nombre`, `rol`
+(`admin` | `usuario`), `estado` (`pendiente` | `activo` | `denegado`), `creado_en`, `actualizado_en`.
+Para quien entra con contraseña: `clave_hash` (PBKDF2, nunca la contraseña), `clave_version` (sube al
+cambiarla y cierra sus sesiones), `intentos_fallidos` y `bloqueado_hasta`.
+El primero se siembra con `npm run db:seed-usuarios`; los de Google/código se crean solos como
+`pendiente`; los de contraseña los crea el admin (*Usuarios* o `npm run usuarios:clave`).
 
 ### `clientes` y `cliente_alias`
 `clientes`: `nombre`, `telefono`, `notas`, `origen` (`app` | `historico`).
@@ -94,6 +97,7 @@ Pares que la app sugirió como posibles repetidos y alguien marcó "no son el mi
 | `0003_estados_y_pagos` | 5 estados por presupuesto (editada a mano: los `listo` toman el estado de su trabajo) y tabla de pagos. |
 | `0004_abonos_por_trabajo` | Pagos pasan de presupuesto a trabajo (editada a mano; el anticipo sigue en el presupuesto). |
 | `0005_respaldo_sheets` | `respaldado_en` y `respaldo_error` en presupuestos. |
+| `0006_usuarios_con_clave` | Contraseña, versión, intentos fallidos y bloqueo en usuarios. |
 
 Cómo crear y aplicar una migración: [DESARROLLO.md](DESARROLLO.md#cambiar-la-base-de-datos).
 Las migraciones editadas a mano se prueban con datos en el formato viejo en `src/db/migracion.test.ts`.
