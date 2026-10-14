@@ -7,6 +7,7 @@ abonos). No hace falta saber nada técnico.
 - [Cómo está organizada](#cómo-está-organizada)
 - [Armar un presupuesto](#armar-un-presupuesto)
 - [Presupuesto desde fotos](#presupuesto-desde-fotos)
+- [Pegar un presupuesto de Claude](#pegar-un-presupuesto-de-claude)
 - [Extras de un trabajo](#extras-de-un-trabajo)
 - [Estados](#estados)
 - [Cerrado en, anticipo y abonos](#cerrado-en-anticipo-y-abonos)
@@ -103,6 +104,21 @@ Las fotos **no se guardan**: se siguen viendo arriba del presupuesto mientras no
 
 > La lectura la hace una inteligencia artificial: casi siempre acierta los números, pero **siempre
 > revisa** contra la foto antes de mandar el PDF. Hay un máximo de 40 lecturas al día entre todos.
+
+## Pegar un presupuesto de Claude
+
+Para cuando le pasas las fotos a Claude desde el teléfono (con `/presupuestos`) y Claude no puede
+entrar a la app: te devuelve un bloque de texto.
+
+1. Copia el bloque completo (desde la primera `{` hasta la última `}`; si copias el mensaje entero
+   también sirve).
+2. En la app: **+ Nuevo presupuesto → Pegarlo aquí** (abajo de las dos opciones). Para un extra,
+   desde el trabajo: **+ Extra → Pegarlo aquí**.
+3. **Pegar lo copiado** (o mantén presionado el cuadro → Pegar) → **Abrir en el editor**.
+4. Se abre el editor lleno con el cuadro **Revisa antes de guardar**, igual que desde fotos. Revisa y
+   **Guarda**.
+
+No usa ninguna lectura del día: el texto ya viene leído.
 
 ## Extras de un trabajo
 

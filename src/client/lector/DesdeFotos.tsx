@@ -64,14 +64,15 @@ export function DesdeFotos({ base, ctx, volver }: { base: EditorEstado; ctx: Con
       }),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["lector"] });
-      const res = estadoDesdeLectura(base, r.lectura, { proveedor: r.proveedor, esExtra: !!ctx.trabajoId, clientes: clientes.data ?? [], buses: buses.data ?? [] });
-      setResultado({ ...res, fotos, proveedor: r.proveedor });
+      const origen = PROVEEDORES_LECTOR[r.proveedor].nombre;
+      const res = estadoDesdeLectura(base, r.lectura, { origen: `fotos con ${origen}`, esExtra: !!ctx.trabajoId, clientes: clientes.data ?? [], buses: buses.data ?? [] });
+      setResultado({ ...res, fotos, origen });
     },
     onError: () => qc.invalidateQueries({ queryKey: ["lector"] }),
   });
 
   if (resultado) {
-    const panel: FotosLeidas = { fotos: resultado.fotos, avisos: resultado.avisos, proveedor: resultado.proveedor };
+    const panel: FotosLeidas = { fotos: resultado.fotos, avisos: resultado.avisos, origen: resultado.origen };
     return (
       <Editor
         key={`fotos-${resultado.fotos.length}-${resultado.inicial.secciones[0]?.key}`}

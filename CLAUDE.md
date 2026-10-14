@@ -221,6 +221,9 @@ Ver `docs/PLAN.md`. Actual:
   (`revisarLectura`) en `src/shared/lector.ts` (+ test). Lector escogido en Ajustes (`configuracion.lector_proveedor`),
   límite 40/día (`configuracion.lector_uso`). Sin migración. Las fotos no se guardan (memoria de la pestaña).
   No probado contra Workers AI ni Claude reales desde aquí (el entorno no llega): probado con IA simulada.
+  `?modo=pegar` (`PegarDeClaude.tsx`, link "Pegarlo aquí" en el selector): pega el JSON que da la skill
+  `/presupuestos` de Claude cuando no puede entrar a la app (teléfono, compu apagada; la red de la nube de Claude
+  bloquea `workers.dev`); se procesa en el navegador con `extraerJson`/`normalizarLectura`/`estadoDesdeLectura`.
 
 ## Decisiones (más reciente arriba)
 

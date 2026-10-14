@@ -3,7 +3,7 @@
  * hay que revisar. Puro (sin React) para poder probarlo.
  */
 import { claveCliente, claveNombreBus, normalizarPlaca } from "../../shared/claves";
-import { PROVEEDORES_LECTOR, revisarLectura, type AvisoLectura, type Lectura, type ProveedorLector } from "../../shared/lector";
+import { revisarLectura, type AvisoLectura, type Lectura } from "../../shared/lector";
 import { similitud } from "../../shared/texto";
 import { nuevaKey, seccionVacia, type EditorEstado, type SeccionEd } from "../editor/modelo";
 
@@ -91,7 +91,8 @@ export interface ResultadoLectura {
 export function estadoDesdeLectura(
   base: EditorEstado,
   l: Lectura,
-  o: { proveedor: ProveedorLector; esExtra: boolean; clientes: ConNombre[]; buses: BusLista[] },
+  /** origen: de dónde salió, para las notas internas ("fotos con Cloudflare · Gemma 4", "texto de Claude"). */
+  o: { origen: string; esExtra: boolean; clientes: ConNombre[]; buses: BusLista[] },
 ): ResultadoLectura {
   const avisos = revisarLectura(l);
   let clienteId = base.clienteId;
@@ -117,7 +118,7 @@ export function estadoDesdeLectura(
       lugar: l.lugar ?? base.lugar,
       cerradoEn: l.cerradoEn === null ? base.cerradoEn : String(l.cerradoEn),
       anticipo: l.anticipo === null ? base.anticipo : String(l.anticipo),
-      notas: [base.notas, `Pasado de fotos con ${PROVEEDORES_LECTOR[o.proveedor].nombre}.`].filter(Boolean).join("\n"),
+      notas: [base.notas, `Pasado de ${o.origen}.`].filter(Boolean).join("\n"),
       secciones: l.secciones.length ? seccionesDesdeLectura(l) : base.secciones,
     },
     avisos,

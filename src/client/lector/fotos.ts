@@ -1,4 +1,4 @@
-import type { AvisoLectura, ProveedorLector } from "../../shared/lector";
+import type { AvisoLectura } from "../../shared/lector";
 import { LADO_FOTO } from "../../shared/lector";
 
 /**
@@ -44,7 +44,8 @@ export async function achicarFoto(archivo: File, lado = LADO_FOTO): Promise<stri
 export interface FotosLeidas {
   fotos: string[];
   avisos: AvisoLectura[];
-  proveedor: ProveedorLector;
+  /** De dónde salió: "Cloudflare · Gemma 4", "Claude (texto pegado)"… */
+  origen: string;
 }
 
 /**

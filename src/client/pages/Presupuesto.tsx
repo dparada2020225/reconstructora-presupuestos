@@ -9,6 +9,7 @@ import { copiarSecciones, desdeItems, seccionVacia, type EditorEstado } from "..
 import { DesdeFotos } from "../lector/DesdeFotos";
 import { fotosDe, olvidarFotos } from "../lector/fotos";
 import { PanelFotos } from "../lector/PanelFotos";
+import { PegarDeClaude } from "../lector/PegarDeClaude";
 import { AccionesPdf } from "../pdf/AccionesPdf";
 
 const texto = (n: number | null) => (n === null ? "" : String(n));
@@ -68,7 +69,7 @@ export function PresupuestoExistente() {
  *   ?trabajo=ID  → extra de ese trabajo
  *   ?base=ID     → copia las líneas de otro presupuesto
  *   ?cliente=ID  → con el cliente ya escogido
- *   ?modo=mano|fotos → sin modo (y sin base) primero se pregunta cómo hacerlo
+ *   ?modo=mano|fotos|pegar → sin modo (y sin base) primero se pregunta cómo hacerlo
  */
 export function PresupuestoNuevo() {
   const [params] = useSearchParams();
@@ -86,11 +87,12 @@ export function PresupuestoNuevo() {
     p.set("modo", m);
     return `/presupuestos/nuevo?${p}`;
   };
-  if (!baseId && modo !== "mano" && modo !== "fotos") return (
+  if (!baseId && modo !== "mano" && modo !== "fotos" && modo !== "pegar") return (
       <ElegirModo
         esExtra={!!trabajoId}
         mano={conModo("mano")}
         fotos={conModo("fotos")}
+        pegar={conModo("pegar")}
         volver={trabajoId ? { to: `/trabajos/${trabajoId}`, texto: "Trabajo" } : clienteId ? { to: `/clientes/${clienteId}`, texto: "Cliente" } : { to: "/presupuestos", texto: "Presupuestos" }}
       />
     );
@@ -122,16 +124,21 @@ export function PresupuestoNuevo() {
     trabajo: t ? { id: t.id, estado: t.estado, cliente: t.cliente, clienteId: t.clienteId, bus: t.bus, placa: t.placa, busId: t.busId } : null,
     hermanos: t ? t.presupuestos.map((p) => ({ ...p, anticipo: null })) : [],
   };
-  if (modo === "fotos" && !baseId) {
+  if ((modo === "fotos" || modo === "pegar") && !baseId) {
     const p = new URLSearchParams(params);
     p.delete("modo");
-    return <DesdeFotos key={`fotos-${trabajoId}-${clienteId}`} base={inicial} ctx={ctx} volver={`/presupuestos/nuevo${p.size ? `?${p}` : ""}`} />;
+    const volver = `/presupuestos/nuevo${p.size ? `?${p}` : ""}`;
+    return modo === "fotos" ? (
+      <DesdeFotos key={`fotos-${trabajoId}-${clienteId}`} base={inicial} ctx={ctx} volver={volver} />
+    ) : (
+      <PegarDeClaude key={`pegar-${trabajoId}-${clienteId}`} base={inicial} ctx={ctx} volver={volver} />
+    );
   }
   return <Editor key={`nuevo-${trabajoId}-${baseId}-${clienteId}`} inicial={inicial} ctx={ctx} />;
 }
 
 /** "¿Cómo lo quieres hacer?": a mano en el editor o desde fotos de la hoja escrita. */
-function ElegirModo({ esExtra, mano, fotos, volver }: { esExtra: boolean; mano: string; fotos: string; volver: { to: string; texto: string } }) {
+function ElegirModo({ esExtra, mano, fotos, pegar, volver }: { esExtra: boolean; mano: string; fotos: string; pegar: string; volver: { to: string; texto: string } }) {
   const tarjeta = "flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-5 hover:border-marca-600 hover:bg-marca-50 focus-visible:outline-2 focus-visible:outline-marca-600";
   return (
     <section className="space-y-4">
@@ -146,6 +153,12 @@ function ElegirModo({ esExtra, mano, fotos, volver }: { esExtra: boolean; mano: 
           <span className="text-sm text-slate-600">Tomar o subir fotos de la hoja escrita a mano. La app la pasa al editor y tú la revisas.</span>
         </Link>
       </div>
+      <p className="text-sm text-slate-600">
+        ¿Claude ya te pasó el presupuesto en texto?{" "}
+        <Link to={pegar} replace className="font-medium text-marca-700 hover:underline">
+          Pegarlo aquí
+        </Link>
+      </p>
     </section>
   );
 }

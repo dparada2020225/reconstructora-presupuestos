@@ -173,6 +173,9 @@ Detalle de tablas en [BASE-DE-DATOS.md](BASE-DE-DATOS.md).
   clave o parecido ≥ 0.85, precio del renglón con cantidad 1 salvo "c/u") y `revisarLectura` saca
   los avisos (sumas contra TOTAL escrito, `[?]`, renglones sin precio). Las fotos se quedan en
   memoria de la pestaña (`recordarFotos`) para verlas junto al presupuesto ya guardado.
+- **Pegar de Claude** (`?modo=pegar`, `src/client/lector/PegarDeClaude.tsx`): el mismo JSON, pero
+  escrito por Claude en un chat (skill `/presupuestos` sin acceso a la app, p. ej. desde el
+  teléfono). Se limpia y revisa en el navegador con las mismas funciones; no llama a la API del lector.
 
 ### Copia de toda la base
 - `src/db/copia-base.ts`: tablas en orden de dependencias; exporta con `row_to_json` (formato de

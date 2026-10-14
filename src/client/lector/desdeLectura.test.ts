@@ -46,7 +46,7 @@ describe("estadoDesdeLectura", () => {
   });
 
   it("llena el editor: cliente, bus, fecha, secciones y cerrado en", () => {
-    const r = estadoDesdeLectura(base, lectura, { proveedor: "cloudflare-gemma", esExtra: false, clientes, buses });
+    const r = estadoDesdeLectura(base, lectura, { origen: "fotos con Cloudflare · Gemma 4", esExtra: false, clientes, buses });
     expect(r.inicial).toMatchObject({ clienteId: 2, busId: 10, fecha: "2026-03-02", lugar: "Pueblo", cerradoEn: "2800" });
     expect(r.inicial.notas).toContain("Cloudflare");
     const [s] = r.inicial.secciones;
@@ -60,11 +60,11 @@ describe("estadoDesdeLectura", () => {
 
   it("avisa si el cliente no está y no toca cliente/bus en un extra", () => {
     const otro = { ...lectura, cliente: "Persona Nueva" };
-    const r = estadoDesdeLectura(base, otro, { proveedor: "claude", esExtra: false, clientes, buses });
+    const r = estadoDesdeLectura(base, otro, { origen: "texto de Claude", esExtra: false, clientes, buses });
     expect(r.inicial.clienteId).toBeNull();
     expect(r.avisos[0].texto).toContain("Persona Nueva");
     expect(r.clienteEscrito).toBe("Persona Nueva");
-    const extra = estadoDesdeLectura({ ...base, clienteId: 1 }, otro, { proveedor: "claude", esExtra: true, clientes, buses });
+    const extra = estadoDesdeLectura({ ...base, clienteId: 1 }, otro, { origen: "texto de Claude", esExtra: true, clientes, buses });
     expect(extra.inicial.clienteId).toBe(1);
     expect(extra.avisos).toEqual([]);
   });
