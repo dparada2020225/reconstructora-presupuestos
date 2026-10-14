@@ -68,4 +68,13 @@ Costo objetivo: **Q0/mes** (dominio propio opcional).
   `npm run db:copia[:produccion]`, y `npm run db:restaurar` para volver a cargarla. No se sube sola a Drive:
   la cuenta de servicio no tiene espacio propio en Drive.
 - Pagos/anticipos formales: ya cubiertos (abonos por trabajo + anticipo por presupuesto).
+
+## Fase 7 — Presupuesto desde fotos ✅
+- **Nuevo presupuesto** pregunta: *Hacerlo a mano* o *Desde fotos*.
+- Desde fotos: foto de cada hoja escrita a mano (cámara o galería, hasta 6) → se achican en el
+  navegador → una IA las lee → se abre el editor lleno como borrador nuevo, con las fotos arriba y
+  avisos (sumas contra los TOTAL escritos, palabras dudosas [?], renglones sin precio, cliente o bus
+  que no está en la lista). Las fotos no se guardan.
+- Lector cambiable desde Ajustes (sin tocar código): Cloudflare Workers AI gratis (Gemma 4 o
+  Llama 4 Scout) o Claude Sonnet (de pago por uso, si se configura la llave). Límite de 40 lecturas al día.
 - Siguiente: lo que pidan al usarla.

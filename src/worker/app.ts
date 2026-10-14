@@ -10,6 +10,7 @@ import { rutasClientes } from "./routes/clientes";
 import { rutasConfiguracion } from "./routes/configuracion";
 import { rutasCopia } from "./routes/copia";
 import { rutasEstadisticas } from "./routes/estadisticas";
+import { rutasLector } from "./routes/lector";
 import { rutasPresupuestos } from "./routes/presupuestos";
 import { rutasProductos } from "./routes/productos";
 import { rutasSesion } from "./routes/sesion";
@@ -75,6 +76,7 @@ export function crearApp(obtenerDb: (env: Env) => Db) {
   app.route("/trabajos", rutasTrabajos);
   app.route("/configuracion", rutasConfiguracion);
   app.route("/copia-base", rutasCopia);
+  app.route("/lector", rutasLector);
 
   app.onError((err, c) => {
     if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);

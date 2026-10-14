@@ -14,6 +14,10 @@ export interface Env {
   SHEETS_RESPALDO_ID?: string;
   /** Firma de la cookie de sesión (mínimo 32 caracteres). Secreto del Worker y .dev.vars. */
   SESSION_SECRET?: string;
+  /** Cloudflare Workers AI (binding "AI" en wrangler.jsonc): lector de fotos gratis. */
+  AI?: Ai;
+  /** Llave de la API de Claude (secreto). Si no está, el lector "Claude" no se puede escoger. */
+  ANTHROPIC_API_KEY?: string;
 }
 
 export interface Usuario {

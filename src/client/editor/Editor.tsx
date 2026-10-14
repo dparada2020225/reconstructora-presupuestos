@@ -40,9 +40,32 @@ export interface ContextoEditor {
   respaldo?: { origen: "app" | "historico"; sheetUrl: string | null; respaldadoEn: string | null; respaldoError: string | null; actualizadoEn: string };
 }
 
+/** Renglón con una palabra que el lector de fotos no entendió. */
+const tieneDuda = (l: LineaEd) => l.descripcion.includes("[?]") || l.detalles.some((d) => d.texto.includes("[?]"));
+
 const botonIcono = "rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:hover:bg-transparent";
 
-export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx: ContextoEditor; acciones?: (x: { guardarAntes: () => Promise<number | null>; sucio: boolean }) => React.ReactNode }) {
+export function Editor({
+  inicial,
+  ctx,
+  acciones,
+  panel,
+  nombreClienteNuevo = "",
+  alGuardarNuevo,
+  accionExtra,
+}: {
+  inicial: EditorEstado;
+  ctx: ContextoEditor;
+  acciones?: (x: { guardarAntes: () => Promise<number | null>; sucio: boolean }) => React.ReactNode;
+  /** Algo arriba de las secciones (p. ej. las fotos de las que se leyó el presupuesto). */
+  panel?: React.ReactNode;
+  /** Nombre para precargar en "Cliente nuevo" (el que se leyó de la foto). */
+  nombreClienteNuevo?: string;
+  /** Se llama con el id al guardar un presupuesto nuevo, antes de ir a su página. */
+  alGuardarNuevo?: (id: number) => void;
+  /** Botón de más junto a "Guardar". */
+  accionExtra?: React.ReactNode;
+}) {
   const qc = useQueryClient();
   const navegar = useNavigate();
   const [e, setE] = useState(inicial);
@@ -82,6 +105,7 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
   const editableClienteBus = ctx.tipo === "original";
   const faltaCliente = !ctx.trabajoId && !e.clienteId;
   const incompletas = lineasIncompletas(e);
+  const dudosas = e.secciones.reduce((a, s) => a + s.lineas.filter(tieneDuda).length, 0);
   const guardar = useMutation({
     mutationFn: async (): Promise<number> => {
       const datos = aEntrada(e, { trabajoId: ctx.id ? null : ctx.trabajoId });
@@ -96,7 +120,10 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
       sucioRef.current = false;
       for (const k of ["presupuestos", "presupuesto", "trabajo", "cliente", "clientes", "productos", "producto", "buses", "bus", "estadisticas"])
         qc.invalidateQueries({ queryKey: [k] });
-      if (!ctx.id) navegar(`/presupuestos/${id}`, { replace: true });
+      if (!ctx.id) {
+        alGuardarNuevo?.(id);
+        navegar(`/presupuestos/${id}`, { replace: true });
+      }
     },
   });
   const puedeGuardar = !faltaCliente && incompletas === 0 && !guardar.isPending;
@@ -185,6 +212,7 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
+            {accionExtra}
             {acciones?.({ guardarAntes, sucio })}
             <Boton variante="primario" disabled={!puedeGuardar || (!sucio && !!ctx.id)} onClick={() => guardar.mutate()} title="Ctrl + S">
               {guardar.isPending ? "Guardando…" : "Guardar"}
@@ -194,10 +222,12 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
         {guardar.error && <Aviso>{guardar.error.message}</Aviso>}
         {faltaCliente && <p className="text-sm text-slate-600">Escoge el cliente para poder guardar.</p>}
         {incompletas > 0 && <p className="text-sm text-amber-800">Hay {incompletas} {incompletas === 1 ? "línea con precio pero" : "líneas con precio pero"} sin descripción.</p>}
+        {dudosas > 0 && <p className="text-sm text-amber-800">Hay {dudosas} {dudosas === 1 ? "renglón" : "renglones"} con [?]: corrige la palabra antes de mandar el PDF.</p>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="min-w-0 space-y-4">
+          {panel}
           {/* Datos */}
           <Caja>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -292,7 +322,7 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
                 {s.lineas.map((l, li) => {
                   const t = totalLinea(l);
                   return (
-                    <li key={l.key} className="rounded-md px-1 py-1 hover:bg-slate-50">
+                    <li key={l.key} className={`rounded-md px-1 py-1 ${tieneDuda(l) ? "bg-amber-50 ring-1 ring-amber-200" : "hover:bg-slate-50"}`}>
                       <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_7.5rem] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_4.5rem_7.5rem_7rem_6.5rem]">
                         <div className="col-span-3 sm:col-span-1">
                           <CampoDescripcion
@@ -525,7 +555,7 @@ export function Editor({ inicial, ctx, acciones }: { inicial: EditorEstado; ctx:
       <NuevoCliente
         abierto={nuevoCliente}
         onCerrar={() => setNuevoCliente(false)}
-        nombreInicial=""
+        nombreInicial={nombreClienteNuevo}
         onCreado={(id) => {
           mutar((d) => {
             d.clienteId = id;

@@ -6,6 +6,7 @@ abonos). No hace falta saber nada técnico.
 - [Entrar a la app](#entrar-a-la-app)
 - [Cómo está organizada](#cómo-está-organizada)
 - [Armar un presupuesto](#armar-un-presupuesto)
+- [Presupuesto desde fotos](#presupuesto-desde-fotos)
 - [Extras de un trabajo](#extras-de-un-trabajo)
 - [Estados](#estados)
 - [Cerrado en, anticipo y abonos](#cerrado-en-anticipo-y-abonos)
@@ -54,7 +55,8 @@ Dos palabras que se usan en toda la app:
 
 ## Armar un presupuesto
 
-1. **Inicio → + Nuevo presupuesto** (o la tecla `N`).
+1. **Inicio → + Nuevo presupuesto** (o la tecla `N`) → **Hacerlo a mano**. (Si ya lo tienes
+   escrito en papel, mejor **Desde fotos**: ver abajo.)
 2. **Cliente**: escribe para buscarlo; si es nuevo, botón **+** a la par.
 3. **Bus**: igual; es opcional. Un bus se reconoce por placa o por nombre ("La Estrella").
 4. **Fecha y lugar**: vienen llenos con hoy y el lugar de siempre; se pueden cambiar.
@@ -76,6 +78,31 @@ Un presupuesto nuevo empieza como **borrador**. Sin límite de filas.
 
 > **Usar uno viejo como base:** en el cuadro *Más* de un presupuesto, *Usar como base para otro
 > presupuesto* abre uno nuevo con las mismas líneas para cambiar lo necesario.
+
+## Presupuesto desde fotos
+
+Para pasar a la app un presupuesto escrito a mano sin teclearlo todo.
+
+1. **+ Nuevo presupuesto → Desde fotos** (también sirve para un extra: *+ Extra* en el trabajo).
+2. **Tomar foto** (en el celular abre la cámara) o **Escoger fotos**. Una hoja por foto, en orden,
+   derecha, con buena luz y que se vean los precios y los TOTAL. Hasta 6 hojas. Con las flechas se
+   cambia el orden y con la ✕ se quita una.
+3. **Leer presupuesto**. Tarda entre unos segundos y un minuto.
+4. Se abre el **editor normal ya lleno**, con las fotos arriba para comparar (toca una para verla
+   grande) y un cuadro **Revisa antes de guardar** con:
+   - secciones cuyos renglones no suman lo mismo que el TOTAL escrito (falta o sobra un precio);
+   - renglones sin precio;
+   - palabras que no se entendieron, marcadas con **[?]** (el renglón sale en amarillo);
+   - si el cliente o el bus no se encontraron en la lista (escógelo o créalo con **+**: el nombre
+     ya viene escrito).
+5. Corrige lo que haga falta comparando con la foto y **Guarda**. Queda como **borrador**, igual que
+   uno hecho a mano. *Leer otra vez* vuelve a las fotos (se pierde lo que cambiaste).
+
+Las fotos **no se guardan**: se siguen viendo arriba del presupuesto mientras no recargues la página
+(*Ya revisé* las quita). En *Notas internas* queda con qué lector se pasó.
+
+> La lectura la hace una inteligencia artificial: casi siempre acierta los números, pero **siempre
+> revisa** contra la foto antes de mandar el PDF. Hay un máximo de 40 lecturas al día entre todos.
 
 ## Extras de un trabajo
 
@@ -181,6 +208,11 @@ Todos los autorizados pueden hacer lo mismo; el administrador además maneja Usu
   pestaña del archivo de respaldo, con el formato del Excel. Si alguno no se pudo copiar, sale
   como pendiente: **Copiar pendientes**. **Volver a copiar todos** rehace todas las pestañas.
   En cada presupuesto (cuadro *Más*) está el link a su pestaña y *Copiar ahora*.
+- **Lector de presupuestos desde fotos**: qué inteligencia artificial lee las fotos.
+  *Cloudflare · Gemma 4* y *Cloudflare · Llama 4 Scout* son gratis; *Claude Sonnet* es de pago
+  (centavos por presupuesto) y solo se puede escoger si se configuró su llave (ver
+  [OPERACION.md](OPERACION.md#lector-de-fotos)). Al leer también se puede probar otro sin
+  cambiar este.
 - **Copia de toda la base**: **Descargar copia (.json)** baja todo lo que hay en la app. Inicio
   avisa si pasó más de un mes sin bajar una. Guárdala en tu compu o en tu Drive y no la
   compartas: tiene todos los datos del negocio.
@@ -200,6 +232,13 @@ La tecla `?` muestra esta lista en la app. Los de una sola tecla no funcionan mi
 | `Esc` | Cerrar ventanas |
 
 ## Preguntas frecuentes
+
+**El presupuesto desde fotos salió con errores.** Corrígelo en el editor antes de guardar. Si pasa
+seguido: fotos más derechas y con más luz, una hoja por foto, o pide al administrador probar otro
+lector.
+
+**"Ya se usó todo lo gratis de Cloudflare por hoy".** Se renueva a las 6 de la tarde. Mientras,
+hazlo a mano o usa otro lector si hay.
 
 **Me sale "Tu solicitud de acceso quedó registrada".** El administrador todavía no te autoriza. Avísale.
 

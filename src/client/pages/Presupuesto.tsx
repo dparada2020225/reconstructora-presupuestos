@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { useParams, useSearchParams } from "react-router";
+import { useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router";
 import { hoyGuatemala, type Ajustes } from "../../shared/presupuesto";
 import { api, type PresupuestoDetalle, type TrabajoDetalle } from "../api";
 import { Aviso, Encabezado } from "../components/ui";
 import { Editor, type ContextoEditor } from "../editor/Editor";
 import { copiarSecciones, desdeItems, seccionVacia, type EditorEstado } from "../editor/modelo";
+import { DesdeFotos } from "../lector/DesdeFotos";
+import { fotosDe, olvidarFotos } from "../lector/fotos";
+import { PanelFotos } from "../lector/PanelFotos";
 import { AccionesPdf } from "../pdf/AccionesPdf";
 
 const texto = (n: number | null) => (n === null ? "" : String(n));
@@ -15,6 +18,9 @@ export function PresupuestoExistente() {
   const id = Number(useParams().id);
   const q = useQuery({ queryKey: ["presupuesto", id], queryFn: () => api<PresupuestoDetalle>(`/presupuestos/${id}`) });
   const p = q.data;
+  // Si se acaba de pasar de fotos, se siguen viendo arriba (solo en esta pestaña).
+  const [, refrescar] = useState(0);
+  const fotos = fotosDe(id);
   // El estado inicial se arma una sola vez por presupuesto (lo que llega después solo actualiza el contexto).
   const inicial = useMemo<EditorEstado | null>(
     () =>
@@ -53,7 +59,8 @@ export function PresupuestoExistente() {
     hermanos: p.hermanos,
     respaldo: { origen: p.origen, sheetUrl: p.sheetUrl, respaldadoEn: p.respaldadoEn, respaldoError: p.respaldoError, actualizadoEn: p.actualizadoEn },
   };
-  return <Editor key={p.id} inicial={inicial} ctx={ctx} acciones={(x) => <AccionesPdf id={p.id} {...x} />} />;
+  const panel = fotos ? <PanelFotos {...fotos} onOlvidar={() => (olvidarFotos(id), refrescar((n) => n + 1))} /> : undefined;
+  return <Editor key={p.id} inicial={inicial} ctx={ctx} panel={panel} acciones={(x) => <AccionesPdf id={p.id} {...x} />} />;
 }
 
 /**
@@ -61,9 +68,11 @@ export function PresupuestoExistente() {
  *   ?trabajo=ID  → extra de ese trabajo
  *   ?base=ID     → copia las líneas de otro presupuesto
  *   ?cliente=ID  → con el cliente ya escogido
+ *   ?modo=mano|fotos → sin modo (y sin base) primero se pregunta cómo hacerlo
  */
 export function PresupuestoNuevo() {
   const [params] = useSearchParams();
+  const modo = params.get("modo");
   const trabajoId = Number(params.get("trabajo")) || null;
   const baseId = Number(params.get("base")) || null;
   const clienteId = Number(params.get("cliente")) || null;
@@ -71,6 +80,20 @@ export function PresupuestoNuevo() {
   const ajustes = useQuery({ queryKey: ["configuracion"], queryFn: () => api<Ajustes>("/configuracion") });
   const trabajo = useQuery({ queryKey: ["trabajo", trabajoId], queryFn: () => api<TrabajoDetalle>(`/trabajos/${trabajoId}`), enabled: !!trabajoId });
   const base = useQuery({ queryKey: ["presupuesto", baseId], queryFn: () => api<PresupuestoDetalle>(`/presupuestos/${baseId}`), enabled: !!baseId });
+
+  const conModo = (m: string) => {
+    const p = new URLSearchParams(params);
+    p.set("modo", m);
+    return `/presupuestos/nuevo?${p}`;
+  };
+  if (!baseId && modo !== "mano" && modo !== "fotos") return (
+      <ElegirModo
+        esExtra={!!trabajoId}
+        mano={conModo("mano")}
+        fotos={conModo("fotos")}
+        volver={trabajoId ? { to: `/trabajos/${trabajoId}`, texto: "Trabajo" } : clienteId ? { to: `/clientes/${clienteId}`, texto: "Cliente" } : { to: "/presupuestos", texto: "Presupuestos" }}
+      />
+    );
 
   const listo = !ajustes.isLoading && (!trabajoId || trabajo.data) && (!baseId || base.data);
   const error = trabajo.error ?? base.error;
@@ -99,5 +122,30 @@ export function PresupuestoNuevo() {
     trabajo: t ? { id: t.id, estado: t.estado, cliente: t.cliente, clienteId: t.clienteId, bus: t.bus, placa: t.placa, busId: t.busId } : null,
     hermanos: t ? t.presupuestos.map((p) => ({ ...p, anticipo: null })) : [],
   };
+  if (modo === "fotos" && !baseId) {
+    const p = new URLSearchParams(params);
+    p.delete("modo");
+    return <DesdeFotos key={`fotos-${trabajoId}-${clienteId}`} base={inicial} ctx={ctx} volver={`/presupuestos/nuevo${p.size ? `?${p}` : ""}`} />;
+  }
   return <Editor key={`nuevo-${trabajoId}-${baseId}-${clienteId}`} inicial={inicial} ctx={ctx} />;
+}
+
+/** "¿Cómo lo quieres hacer?": a mano en el editor o desde fotos de la hoja escrita. */
+function ElegirModo({ esExtra, mano, fotos, volver }: { esExtra: boolean; mano: string; fotos: string; volver: { to: string; texto: string } }) {
+  const tarjeta = "flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-5 hover:border-marca-600 hover:bg-marca-50 focus-visible:outline-2 focus-visible:outline-marca-600";
+  return (
+    <section className="space-y-4">
+      <Encabezado titulo={esExtra ? "Nuevo extra" : "Nuevo presupuesto"} detalle="¿Cómo lo quieres hacer?" volver={volver} />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link to={mano} replace className={tarjeta} autoFocus>
+          <span className="text-lg font-semibold text-slate-900">Hacerlo a mano</span>
+          <span className="text-sm text-slate-600">Escribir las líneas en el editor, con el catálogo y los precios sugeridos.</span>
+        </Link>
+        <Link to={fotos} replace className={tarjeta}>
+          <span className="text-lg font-semibold text-slate-900">Desde fotos</span>
+          <span className="text-sm text-slate-600">Tomar o subir fotos de la hoja escrita a mano. La app la pasa al editor y tú la revisas.</span>
+        </Link>
+      </div>
+    </section>
+  );
 }

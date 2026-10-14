@@ -14,6 +14,7 @@ Google Sheets** y hay **estadísticas** de todo el histórico.
 | | |
 |---|---|
 | **Presupuestos** | Editor por secciones (ADENTRO, AFUERA, TROMPA…), autocompletar del catálogo con precio sugerido, cantidades y precio por unidad, detalles que no suman, precio "?" por definir, "cerrado en", anticipo y saldo. Sin límite de filas. Ctrl+S guarda. |
+| **Desde fotos** | Foto de la hoja escrita a mano → una IA la lee y abre el editor lleno, con las fotos al lado y avisos de lo que hay que revisar (sumas contra los TOTAL, palabras dudosas). El lector (Cloudflare gratis o Claude) se escoge en Ajustes. |
 | **Trabajos y extras** | Un trabajo agrupa el original y sus extras (Extra 1, 2…). En los extras sale el resumen del trabajo y hay **documento unificado** (todo en un PDF). |
 | **Estados** | Cada presupuesto: borrador, cotización, en curso, terminado o cancelado. El estado del trabajo se calcula solo. |
 | **Abonos** | Pagos del trabajo completo (efectivo, cheque, transferencia) con aro de % pagado; se editan y borran. No salen en el PDF. |
@@ -25,7 +26,8 @@ Google Sheets** y hay **estadísticas** de todo el histórico.
 | **Accesos** | Dos formas de entrar: Google o código al correo (queda pendiente hasta que el admin lo autoriza), o correo y contraseña para usuarios que crea el admin (se pueden cambiar, no ver). |
 | **Copias de la base** | Descarga de toda la base en JSON (con recordatorio mensual) y restauración con un comando. |
 
-Todo funciona en **planes gratuitos** (Cloudflare Workers + Access, Neon, Google Cloud).
+Todo funciona en **planes gratuitos** (Cloudflare Workers + Access + Workers AI, Neon, Google
+Cloud). Lo único opcional de pago es leer fotos con Claude (centavos por presupuesto).
 
 ## Documentación
 
@@ -111,9 +113,9 @@ Commits sin coautoría (sin `Co-Authored-By`); el autor es el dueño del repo.
 |---|---|
 | `.env` (local, ignorado) | `DATABASE_URL` (dev), `SEED_USUARIOS`, `DATA_DIR`, `ETL_OUT_DIR`, `COPIAS_DIR` (opcional) |
 | `.dev.vars` (local, ignorado) | `DATABASE_URL` (dev), `DEV_AUTH_EMAIL`; y los `GOOGLE_*` / `SHEETS_RESPALDO_ID` si se usa el respaldo en local |
-| Secretos del Worker | `DATABASE_URL` (production), `SESSION_SECRET`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SHEETS_RESPALDO_ID` |
-| `wrangler.jsonc` → `vars` | `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` (públicos) |
-| Página **Ajustes** (admin) | Membrete del PDF (empresa, correo, teléfono, firma, lugar, nota), logo e íconos de redes. Se guarda en la base (una vez en dev y otra en production) |
+| Secretos del Worker | `DATABASE_URL` (production), `SESSION_SECRET`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SHEETS_RESPALDO_ID`, `ANTHROPIC_API_KEY` (opcional, lector con Claude) |
+| `wrangler.jsonc` | `vars`: `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` (públicos); binding `AI` (Workers AI) |
+| Página **Ajustes** (admin) | Membrete del PDF (empresa, correo, teléfono, firma, lugar, nota), logo e íconos de redes, y el lector de fotos. Se guarda en la base (una vez en dev y otra en production) |
 
 ## Estructura
 

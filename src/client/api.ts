@@ -221,3 +221,11 @@ export interface TrabajoDetalle extends TrabajoResumen {
   fechaFin: string | null;
   origen: "app" | "historico";
 }
+
+/** GET /api/lector: qué lector de fotos se usa y cuántas lecturas van hoy. */
+export interface EstadoLector {
+  proveedor: import("../shared/lector").ProveedorLector;
+  proveedores: { id: import("../shared/lector").ProveedorLector; nombre: string; detalle: string; modelo: string; disponible: boolean }[];
+  usoHoy: number;
+  limite: number;
+}

@@ -14,3 +14,7 @@ DEV_AUTH_EMAIL="tu-correo@gmail.com"
 # GOOGLE_SERVICE_ACCOUNT_EMAIL=""
 # GOOGLE_PRIVATE_KEY=""
 # SHEETS_RESPALDO_ID=""
+
+# Lector de fotos con Claude (opcional). Sin esto solo está Cloudflare Workers AI (binding AI de
+# wrangler.jsonc, que en local también llama a Cloudflare: hay que haber hecho `npx wrangler login`).
+# ANTHROPIC_API_KEY=""

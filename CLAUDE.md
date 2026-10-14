@@ -213,7 +213,22 @@ Ver `docs/PLAN.md`. Actual:
     `scripts/copia-base.ts` (→ `../copias`, se niega dentro del repo) y `scripts/restaurar-base.ts`.
     Probado con PGlite (`src/worker/copia-base.test.ts`) y con Postgres 16 real (postgres-js).
 
+- [x] Fase 7 — Presupuesto desde fotos: /presupuestos/nuevo pregunta "Hacerlo a mano" / "Desde fotos"
+  (`?modo=mano|fotos`; con `?base=` no pregunta). `src/client/lector/` (DesdeFotos, PanelFotos, `achicarFoto` a
+  1600 px JPG, `estadoDesdeLectura` + test) → `POST /api/lector` (`src/worker/routes/lector.ts`, `src/worker/lector.ts`)
+  → Workers AI (binding `AI`: `@cf/google/gemma-4-26b-a4b-it` por defecto o llama-4-scout) o Claude (`fetch` a la API,
+  secreto `ANTHROPIC_API_KEY`, modelo `claude-sonnet-5-5`). Prompt, limpieza del JSON (`normalizarLectura`) y avisos
+  (`revisarLectura`) en `src/shared/lector.ts` (+ test). Lector escogido en Ajustes (`configuracion.lector_proveedor`),
+  límite 40/día (`configuracion.lector_uso`). Sin migración. Las fotos no se guardan (memoria de la pestaña).
+  No probado contra Workers AI ni Claude reales desde aquí (el entorno no llega): probado con IA simulada.
+
 ## Decisiones (más reciente arriba)
+
+- 2026-10-13 — Presupuesto desde fotos con lector cambiable desde la UI. Gemini gratis descartado (Google usa
+  los datos del plan gratis para mejorar sus productos). Cloudflare Workers AI gratis primero; Claude Sonnet si
+  Cloudflare no lee bien la letra (créditos prepagados, sin mensualidad). El Worker no procesa las fotos (CPU):
+  el navegador las achica y el Worker solo las reenvía. Sin salida estructurada de la API: se pide JSON en el
+  prompt y se limpia con `extraerJson`/`normalizarLectura`, igual para todos los lectores.
 
 - 2026-10-13 — Tercera forma de entrar: correo y contraseña, para quien no puede usar Google ni
   recibir el código. Access pasa a proteger solo `/acceso`; la app maneja su propia sesión (cookie

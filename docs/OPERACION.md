@@ -9,6 +9,7 @@ los errores. Las cuentas y la configuración inicial están en [DESPLIEGUE.md](D
 - [Copias de la base](#copias-de-la-base)
 - [Restaurar una copia](#restaurar-una-copia)
 - [Respaldo en Google Sheets](#respaldo-en-google-sheets)
+- [Lector de fotos](#lector-de-fotos)
 - [Llaves y secretos](#llaves-y-secretos)
 - [Límites de los planes gratis](#límites-de-los-planes-gratis)
 - [Solución de problemas](#solución-de-problemas)
@@ -103,6 +104,20 @@ en el repo** (`check:privacidad` y `.gitignore` bloquean `copia-base*.json` y `c
 - Cambiar de archivo: crear el nuevo con su pestaña FORMATO, compartirlo con la cuenta de servicio
   (Editor) y volver a correr `npm run configurar:google`.
 
+## Lector de fotos
+
+- Se escoge en **Ajustes → Lector de presupuestos desde fotos** (admin), sin tocar código. Al leer,
+  quien tenga varios disponibles puede probar otro para ese presupuesto.
+- **Cloudflare · Gemma 4** (por defecto) y **Cloudflare · Llama 4 Scout**: gratis con el plan de
+  Workers (10 000 neuronas al día, ~80-250 por presupuesto; se renueva a las 6 pm de Guatemala).
+  Si se acaba, la app lo dice y se puede seguir a mano.
+- **Claude Sonnet**: el que mejor lee letra a mano. De pago por uso (~US$0.03 por presupuesto de
+  dos hojas). Activarlo: [DESPLIEGUE.md](DESPLIEGUE.md#7-lector-de-presupuestos-desde-fotos).
+  Ver el gasto en console.anthropic.com → *Usage*; poner límite mensual en *Limits*.
+- Límite de la app: **40 lecturas al día** entre todos (cada intento cuenta), para que un error o un
+  abuso no gaste de más. Se cambia en `LIMITE_DIARIO` (`src/shared/lector.ts`).
+- Las fotos no se guardan en ningún lado de la app.
+
 ## Llaves y secretos
 
 | Secreto | Dónde vive | Cómo cambiarlo |
@@ -112,6 +127,7 @@ en el repo** (`check:privacidad` y `.gitignore` bloquean `copia-base*.json` y `c
 | `SESSION_SECRET` (firma de las sesiones) | Secreto del Worker y `.dev.vars` | Generar uno nuevo (ver DESPLIEGUE.md, paso de Access) y `npx wrangler secret put SESSION_SECRET`. Cierra la sesión de todos. |
 | Llave de la cuenta de servicio de Google | Secreto del Worker (`GOOGLE_PRIVATE_KEY`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`) y `.dev.vars` | Google Cloud → IAM → Cuentas de servicio → *Claves*: crear una nueva JSON, `npm run configurar:google`, y **borrar la vieja** |
 | Id del archivo de respaldo | Secreto `SHEETS_RESPALDO_ID` | `npm run configurar:google` |
+| Llave de Claude (lector de fotos, opcional) | Secreto `ANTHROPIC_API_KEY` y `.dev.vars` | console.anthropic.com → *API Keys*: crear una nueva, `npx wrangler secret put ANTHROPIC_API_KEY` y **borrar la vieja** |
 | `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` | `wrangler.jsonc` → `vars` (no son secretos) | Editar el archivo y push |
 
 Si una llave se filtra (se subió por error, alguien la vio): cambiarla de inmediato con la tabla de
@@ -126,6 +142,7 @@ arriba. Nunca pegar secretos en issues, commits ni chats.
 |---|---|
 | Cloudflare Workers | 100 000 peticiones/día; ~10 ms de CPU por petición (por eso lo pesado corre en el navegador). |
 | Cloudflare Access (Zero Trust Free) | 50 usuarios. |
+| Cloudflare Workers AI | 10 000 neuronas al día (lector de fotos gratis). |
 | Neon | Almacenamiento y horas de cómputo limitados (revisar el uso en la consola de Neon). La base se duerme sola y despierta en la primera consulta: la primera carga después de un rato puede tardar un poco. |
 | Google Sheets | Hasta 10 millones de celdas por archivo; si se llena, crear otro archivo de respaldo. |
 
@@ -155,5 +172,10 @@ arriba. Nunca pegar secretos en issues, commits ni chats.
 | Al compartir no sale WhatsApp (compu) | Falta la app de escritorio | Instalar WhatsApp para Windows, o compartir desde el celular. |
 | "Ver PDF" no abre | Ventanas emergentes bloqueadas | Permitirlas para la app, o Descargar PDF. |
 | Un total del histórico se ve inflado | Resumen del Excel leído como líneas | Ver [ETL.md](ETL.md#problemas-conocidos-del-histórico) y corregir el presupuesto en la app. |
+| "Ya se usó todo lo gratis de Cloudflare por hoy" | Se acabaron las neuronas del día | Esperar a las 6 pm, hacerlo a mano, o usar Claude. |
+| "Ya se leyeron 40 presupuestos hoy" | Límite diario de la app | Mañana; o subir `LIMITE_DIARIO`. |
+| "Claude no está configurado" / "La llave de Claude no es válida" | Falta o está mal `ANTHROPIC_API_KEY` | `npx wrangler secret put ANTHROPIC_API_KEY`, o escoger Cloudflare en Ajustes. |
+| "La cuenta de Claude no tiene saldo" | Se acabaron los créditos | Recargar en console.anthropic.com → *Billing*. |
+| "La respuesta no trae un presupuesto" | La IA no entendió las fotos | Fotos más claras, una hoja por foto, o probar otro lector. |
 | Un cliente/producto aparece dos veces | Escrito distinto | Unirlos (Clientes/Productos → Posibles repetidos). |
 | `db:restaurar` dice "migraciones" | La base destino no está al día | `npm run db:migrate` (o `db:migrate:produccion`) y volver a intentar. |

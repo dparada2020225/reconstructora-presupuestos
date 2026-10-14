@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { IMAGENES_AJUSTES, type Ajustes as TAjustes } from "../../shared/presupuesto";
-import { api, enviar, type Usuario } from "../api";
+import { api, enviar, type EstadoLector, type Usuario } from "../api";
 import { CopiaBaseAjustes } from "../components/CopiaBase";
 import { Aviso, Boton, Caja, Campo, claseInput, Encabezado } from "../components/ui";
 
@@ -45,9 +45,51 @@ export function Ajustes() {
   return (
     <div className="space-y-4">
       <FormAjustes key={JSON.stringify(q.data)} inicial={q.data} onGuardado={(a) => qc.setQueryData(["configuracion"], a)} />
+      <LectorAjustes />
       <RespaldoAjustes />
       <CopiaBaseAjustes />
     </div>
+  );
+}
+
+/** Qué IA lee los presupuestos desde fotos. Se cambia aquí, sin tocar el código. */
+function LectorAjustes() {
+  const qc = useQueryClient();
+  const estado = useQuery({ queryKey: ["lector"], queryFn: () => api<EstadoLector>("/lector") });
+  const cambiar = useMutation({
+    mutationFn: (proveedor: string) => enviar<EstadoLector>("PUT", "/lector", { proveedor }),
+    onSuccess: (r) => qc.setQueryData(["lector"], r),
+  });
+  const d = estado.data;
+  return (
+    <Caja titulo="Lector de presupuestos desde fotos">
+      {!d ? (
+        estado.error ? <Aviso>{estado.error.message}</Aviso> : <p className="text-sm text-slate-500">Revisando…</p>
+      ) : (
+        <div className="space-y-3 text-sm">
+          <p className="text-slate-600">La IA que lee las fotos en <b>Nuevo presupuesto → Desde fotos</b>. Al leer también se puede probar otro de los disponibles sin cambiar este.</p>
+          <fieldset className="space-y-2">
+            <legend className="sr-only">Lector</legend>
+            {d.proveedores.map((p) => (
+              <label key={p.id} className={`flex items-start gap-2 rounded-md border px-3 py-2 ${p.id === d.proveedor ? "border-marca-600 bg-marca-50" : "border-slate-200"} ${p.disponible ? "cursor-pointer" : "opacity-60"}`}>
+                <input type="radio" name="lector" className="mt-1" checked={p.id === d.proveedor} disabled={!p.disponible || cambiar.isPending} onChange={() => cambiar.mutate(p.id)} />
+                <span>
+                  <span className="font-medium text-slate-900">{p.nombre}</span>
+                  <span className="block text-xs text-slate-600">
+                    {p.detalle}
+                    {!p.disponible && (p.id === "claude" ? " · Falta la llave: npx wrangler secret put ANTHROPIC_API_KEY (ver OPERACION.md)." : " · Falta el binding AI en wrangler.jsonc.")}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <p className="text-xs text-slate-500">
+            Lecturas hoy: {d.usoHoy} de {d.limite} (límite diario para que un error no gaste de más).
+          </p>
+          {cambiar.error && <Aviso>{cambiar.error.message}</Aviso>}
+        </div>
+      )}
+    </Caja>
   );
 }
 

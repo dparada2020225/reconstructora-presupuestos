@@ -40,6 +40,7 @@ El plan gratis de Workers da muy poca CPU por petición. Por eso:
 | Copia de toda la base | El navegador pide cada tabla de a 1000 filas y arma el JSON |
 | Estadísticas | Consultas SQL agregadas en Postgres; el Worker solo arma la respuesta |
 | Respaldo en Sheets | `waitUntil` (después de responder); casi todo es espera de red, no CPU |
+| Presupuesto desde fotos | El navegador achica las fotos (1600 px, JPG); el Worker solo las reenvía a la IA y valida el JSON |
 
 ## Autenticación y permisos
 
@@ -153,6 +154,25 @@ Detalle de tablas en [BASE-DE-DATOS.md](BASE-DE-DATOS.md).
 - Si falla, el presupuesto queda guardado igual, con `respaldo_error`; los pendientes
   (`respaldado_en < actualizado_en`) se copian desde Ajustes de a 5.
 - Los renglones salen de `src/shared/respaldo.ts` (mismo orden que el PDF).
+
+### Presupuesto desde fotos
+- Navegador (`src/client/lector/`): achica cada foto a 1600 px de lado largo en JPG
+  (`achicarFoto`), manda `POST /api/lector` con las fotos y los ~200 nombres más usados del
+  catálogo (le ayudan a la IA a entender la letra).
+- Worker (`src/worker/lector.ts`, `routes/lector.ts`): revisa el límite diario
+  (`configuracion.lector_uso`), arma las instrucciones (`instrucciones()` en
+  `src/shared/lector.ts`) y llama al lector escogido en Ajustes (`configuracion.lector_proveedor`):
+  - **Cloudflare Workers AI** por el binding `AI` (`@cf/google/gemma-4-26b-a4b-it` o
+    `@cf/meta/llama-4-scout-17b-16e-instruct`): gratis hasta 10 000 neuronas al día (se renueva a
+    las 00:00 UTC); las fotos no salen de Cloudflare ni se usan para entrenar.
+  - **Claude** por la API de Anthropic (`fetch` a `/v1/messages`, llave en el secreto
+    `ANTHROPIC_API_KEY`): de pago por uso con créditos prepagados; la API no entrena con los datos.
+- La respuesta se limpia con `extraerJson` + `normalizarLectura` (montos en texto, RESUMEN/TOTAL
+  copiados como renglones, campos de más o de menos). No se guarda nada.
+- De vuelta en el navegador, `estadoDesdeLectura` arma el estado del editor (cliente y bus por
+  clave o parecido ≥ 0.85, precio del renglón con cantidad 1 salvo "c/u") y `revisarLectura` saca
+  los avisos (sumas contra TOTAL escrito, `[?]`, renglones sin precio). Las fotos se quedan en
+  memoria de la pestaña (`recordarFotos`) para verlas junto al presupuesto ya guardado.
 
 ### Copia de toda la base
 - `src/db/copia-base.ts`: tablas en orden de dependencias; exporta con `row_to_json` (formato de

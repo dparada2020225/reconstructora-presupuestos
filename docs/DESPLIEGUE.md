@@ -109,7 +109,20 @@ Entrar como admin → **Ajustes**: empresa, correo, teléfono, firma, lugar por 
 en la tabla `configuracion` **de esa base**: hay que hacerlo en production y, si se quiere ver igual
 en local, también en dev.
 
-## 7. Histórico
+## 7. Lector de presupuestos desde fotos
+
+- **Cloudflare (gratis)**: no hay que hacer nada. `wrangler.jsonc` ya trae el binding
+  `"ai": { "binding": "AI" }` y Workers AI viene con la cuenta (10 000 neuronas gratis al día).
+  En local (`npm run dev`) también usa Cloudflare de verdad: hay que haber hecho `npx wrangler login`.
+- **Claude (de pago, opcional)**:
+  1. Cuenta en [console.anthropic.com](https://console.anthropic.com) → *Billing* → cargar créditos
+     (prepago, sin mensualidad; vencen al año). Poner un **límite de gasto** mensual bajo.
+  2. *API Keys* → *Create Key* (nombre "reconstructora-presupuestos"). Se ve **una sola vez**.
+  3. `npx wrangler secret put ANTHROPIC_API_KEY` y pegarla cuando la pida (no escribirla en el
+     comando). Para local, agregar `ANTHROPIC_API_KEY=…` a `.dev.vars`.
+  4. Ajustes → *Lector de presupuestos desde fotos* → Claude Sonnet.
+
+## 8. Histórico
 
 Cargar los Excel viejos a production **una sola vez, antes de empezar a usar la app**:
 `npm run etl:parse` → revisar `revision.md` → `npm run etl:load:produccion`. Detalle y advertencias
@@ -125,8 +138,8 @@ en [ETL.md](ETL.md).
 | Datos | Neon (`production`, `dev`) |
 | Respaldo por presupuesto | Google Sheets "Respaldo presupuestos" (Drive del admin) |
 | Copias de toda la base | Compu / Drive del admin (fuera del repo) |
-| Secretos de production | Secretos del Worker (`DATABASE_URL`, `SESSION_SECRET`, `GOOGLE_*`, `SHEETS_RESPALDO_ID`) |
+| Secretos de production | Secretos del Worker (`DATABASE_URL`, `SESSION_SECRET`, `GOOGLE_*`, `SHEETS_RESPALDO_ID`, `ANTHROPIC_API_KEY` si se usa Claude) |
 | Secretos de local | `.env`, `.dev.vars` |
 | Llave JSON de la cuenta de servicio | Compu del admin, fuera del repo |
 | Excel históricos, `overrides.json`, `historico.json` | Carpeta padre del repo / `../_etl` |
-| Membrete, logo e íconos | Tabla `configuracion` de cada base |
+| Membrete, logo e íconos; lector de fotos escogido | Tabla `configuracion` de cada base |

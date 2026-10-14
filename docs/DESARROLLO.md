@@ -46,6 +46,8 @@ En local no hay login: `DEV_AUTH_EMAIL` dice quién eres. Para el respaldo en Sh
 | `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` | `wrangler.jsonc` → `vars` | Verificar el JWT de Cloudflare Access (en `/acceso`). |
 | `SESSION_SECRET` | Secreto del Worker y `.dev.vars` (mínimo 32 caracteres) | Firma la cookie de sesión. En local solo hace falta para probar el login sin `DEV_AUTH_EMAIL`. |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`, `SHEETS_RESPALDO_ID` | Secretos del Worker y `.dev.vars` | Respaldo en Sheets (`npm run configurar:google`). |
+| `AI` | Binding en `wrangler.jsonc` (no es secreto) | Workers AI para el lector de fotos. En local llama a Cloudflare de verdad (`wrangler login`). |
+| `ANTHROPIC_API_KEY` | Secreto del Worker y `.dev.vars` (opcional) | Lector de fotos con Claude. |
 
 ## Comandos
 
@@ -78,6 +80,7 @@ src/
     busqueda.ts      búsqueda global (pura, con test)
     components/      Layout, ui (botones, campos, diálogos…), gráficas, búsqueda, copia de la base, unir, trabajos
     editor/          editor de presupuestos (modelo.ts, Editor.tsx, CampoDescripcion, EstadoPagos, Respaldo)
+    lector/          presupuesto desde fotos (DesdeFotos, PanelFotos, achicar fotos, lectura → editor)
     pages/           una por ruta
     pdf/             botones de PDF (ver, descargar, compartir, unificado)
   worker/
@@ -86,6 +89,7 @@ src/
     routes/*.ts      una por recurso (+ comun.ts)
     middleware/auth  Access + tabla usuarios
     respaldo.ts      Google Sheets
+    lector.ts        lector de fotos (Workers AI / Claude)
     *.test.ts        pruebas de la API con PGlite
   db/
     schema.ts        esquema (fuente de verdad)
