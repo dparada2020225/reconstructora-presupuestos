@@ -64,8 +64,11 @@ describe("estadoDesdeLectura", () => {
     expect(r.inicial.clienteId).toBeNull();
     expect(r.avisos[0].texto).toContain("Persona Nueva");
     expect(r.clienteEscrito).toBe("Persona Nueva");
+    // No está: se crea al guardar, con su bus.
+    expect(r.nuevos).toEqual({ cliente: "Persona Nueva", bus: { nombre: "Lucero", placa: null } });
     const extra = estadoDesdeLectura({ ...base, clienteId: 1 }, otro, { origen: "texto de Claude", esExtra: true, clientes, buses });
     expect(extra.inicial.clienteId).toBe(1);
     expect(extra.avisos).toEqual([]);
+    expect(extra.nuevos).toEqual({ cliente: null, bus: null });
   });
 });

@@ -52,6 +52,7 @@ export function PegarDeClaude({ base, ctx, volver }: { base: EditorEstado; ctx: 
         ctx={ctx}
         panel={<PanelFotos {...panel} />}
         nombreClienteNuevo={resultado.clienteEscrito ?? ""}
+        nuevos={resultado.nuevos}
         alGuardarNuevo={(id) => recordarFotos(id, panel)}
         accionExtra={
           <Boton variante="texto" onClick={() => setResultado(null)} title="Volver al texto (se pierde lo que cambiaste aquí)">

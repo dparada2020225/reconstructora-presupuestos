@@ -85,6 +85,13 @@ export interface ResultadoLectura {
   avisos: AvisoLectura[];
   /** Para precargar "Cliente nuevo" si no se encontró. */
   clienteEscrito: string | null;
+  /** Lo que no está en la lista y el editor crea solo al guardar. */
+  nuevos: NuevosAlGuardar;
+}
+
+export interface NuevosAlGuardar {
+  cliente: string | null;
+  bus: { nombre: string | null; placa: string | null } | null;
 }
 
 /** Junta lo que ya se sabía (trabajo, cliente de la URL, lugar por defecto) con lo que se leyó. */
@@ -97,17 +104,24 @@ export function estadoDesdeLectura(
   const avisos = revisarLectura(l);
   let clienteId = base.clienteId;
   let busId = base.busId;
+  const nuevos: NuevosAlGuardar = { cliente: null, bus: null };
   if (!o.esExtra && !clienteId && l.cliente) {
     const c = emparejarCliente(l.cliente, o.clientes);
     if (c) {
       clienteId = c.id;
       if (!c.exacto) avisos.unshift({ tipo: "cliente", texto: `Se escogió el cliente "${c.nombre}" (en la hoja dice "${l.cliente}"). Revisa que sea él.` });
-    } else avisos.unshift({ tipo: "cliente", texto: `El cliente "${l.cliente}" no está en la lista: búscalo con otro nombre o créalo con el botón +.` });
+    } else {
+      nuevos.cliente = l.cliente;
+      avisos.unshift({ tipo: "cliente", texto: `Cliente nuevo: "${l.cliente}" no está en la lista y se crea al guardar. Si ya existe con otro nombre, escógelo.` });
+    }
   }
   if (!o.esExtra && !busId && (l.bus || l.placa)) {
     const b = emparejarBus(l, o.buses, clienteId);
     if (b) busId = b.id;
-    else avisos.push({ tipo: "cliente", texto: `Bus escrito: "${[l.placa, l.bus].filter(Boolean).join(" / ")}". Escógelo o créalo con el botón +.` });
+    else {
+      nuevos.bus = { nombre: l.bus, placa: l.placa };
+      avisos.push({ tipo: "cliente", texto: `Bus nuevo: "${[l.placa, l.bus].filter(Boolean).join(" / ")}" se crea al guardar. Si ya existe, escógelo.` });
+    }
   }
   return {
     inicial: {
@@ -123,5 +137,6 @@ export function estadoDesdeLectura(
     },
     avisos,
     clienteEscrito: l.cliente,
+    nuevos,
   };
 }

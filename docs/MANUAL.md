@@ -94,8 +94,8 @@ Para pasar a la app un presupuesto escrito a mano sin teclearlo todo.
    - secciones cuyos renglones no suman lo mismo que el TOTAL escrito (falta o sobra un precio);
    - renglones sin precio;
    - palabras que no se entendieron, marcadas con **[?]** (el renglón sale en amarillo);
-   - si el cliente o el bus no se encontraron en la lista (escógelo o créalo con **+**: el nombre
-     ya viene escrito).
+   - si el cliente o el bus no están en la lista: debajo dice **Nuevo: … — se crea al guardar**.
+     Si en realidad ya existe con otro nombre, escógelo en la lista (o toca *No crear*).
 5. Corrige lo que haga falta comparando con la foto y **Guarda**. Queda como **borrador**, igual que
    uno hecho a mano. *Leer otra vez* vuelve a las fotos (se pierde lo que cambiaste).
 

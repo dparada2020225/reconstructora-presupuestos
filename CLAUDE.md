@@ -224,6 +224,9 @@ Ver `docs/PLAN.md`. Actual:
   `?modo=pegar` (`PegarDeClaude.tsx`, link "Pegarlo aquí" en el selector): pega el JSON que da la skill
   `/presupuestos` de Claude cuando no puede entrar a la app (teléfono, compu apagada; la red de la nube de Claude
   bloquea `workers.dev`); se procesa en el navegador con `extraerJson`/`normalizarLectura`/`estadoDesdeLectura`.
+  Cliente/bus leídos que no están en la lista se crean solos al guardar (prop `nuevos` del Editor, "No crear" para
+  evitarlo). Varios renglones con un solo precio (llave en la hoja) → renglón "Incluye" con ese precio y los demás
+  como detalles (regla en `instrucciones()`).
 
 ## Decisiones (más reciente arriba)
 

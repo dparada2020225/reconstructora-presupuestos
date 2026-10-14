@@ -80,6 +80,7 @@ export function DesdeFotos({ base, ctx, volver }: { base: EditorEstado; ctx: Con
         ctx={ctx}
         panel={<PanelFotos {...panel} />}
         nombreClienteNuevo={resultado.clienteEscrito ?? ""}
+        nuevos={resultado.nuevos}
         alGuardarNuevo={(id) => recordarFotos(id, panel)}
         accionExtra={
           <Boton variante="texto" onClick={() => setResultado(null)} title="Volver a las fotos (se pierde lo que cambiaste aquí)">

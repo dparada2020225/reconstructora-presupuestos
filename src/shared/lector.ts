@@ -77,6 +77,7 @@ Cómo vienen escritos:
 - "TOTAL" al final de una sección es la suma escrita: no es un renglón, va en totalEscrito.
 - "RESUMEN" o "TOTALES" repiten los totales de cada sección: NO los copies como renglones.
 - "CERRADO EN" es el precio final negociado; "ANTICIPO" es el adelanto.
+- A veces una llave o línea vertical agrupa varios renglones con UN solo precio: en ese caso pon un renglón con descripcion "Incluye", ese precio, y los renglones agrupados en sus detalles.
 
 Reglas:
 - Copia el texto como está escrito (solo corrige ortografía evidente). Si una palabra no se entiende, pon tu mejor lectura seguida de [?] y anótala en "dudas".

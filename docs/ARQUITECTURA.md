@@ -171,7 +171,9 @@ Detalle de tablas en [BASE-DE-DATOS.md](BASE-DE-DATOS.md).
   copiados como renglones, campos de más o de menos). No se guarda nada.
 - De vuelta en el navegador, `estadoDesdeLectura` arma el estado del editor (cliente y bus por
   clave o parecido ≥ 0.85, precio del renglón con cantidad 1 salvo "c/u") y `revisarLectura` saca
-  los avisos (sumas contra TOTAL escrito, `[?]`, renglones sin precio). Las fotos se quedan en
+  los avisos (sumas contra TOTAL escrito, `[?]`, renglones sin precio). Cliente y bus que no se
+  encuentran quedan en `nuevos` y el editor los crea con `POST /api/clientes` y `/api/buses` justo
+  antes de guardar el presupuesto (si no se escogió otro). Las fotos se quedan en
   memoria de la pestaña (`recordarFotos`) para verlas junto al presupuesto ya guardado.
 - **Pegar de Claude** (`?modo=pegar`, `src/client/lector/PegarDeClaude.tsx`): el mismo JSON, pero
   escrito por Claude en un chat (skill `/presupuestos` sin acceso a la app, p. ej. desde el

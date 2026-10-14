@@ -53,6 +53,7 @@ export function Editor({
   nombreClienteNuevo = "",
   alGuardarNuevo,
   accionExtra,
+  nuevos: nuevosIniciales,
 }: {
   inicial: EditorEstado;
   ctx: ContextoEditor;
@@ -65,6 +66,8 @@ export function Editor({
   alGuardarNuevo?: (id: number) => void;
   /** Botón de más junto a "Guardar". */
   accionExtra?: React.ReactNode;
+  /** Cliente y bus leídos que no están en la lista: se crean solos al guardar (si no se escoge otro). */
+  nuevos?: { cliente: string | null; bus: { nombre: string | null; placa: string | null } | null };
 }) {
   const qc = useQueryClient();
   const navegar = useNavigate();
@@ -103,12 +106,30 @@ export function Editor({
 
   /* ───── Guardar ───── */
   const editableClienteBus = ctx.tipo === "original";
-  const faltaCliente = !ctx.trabajoId && !e.clienteId;
+  const [nuevos, setNuevos] = useState(nuevosIniciales ?? null);
+  const clienteNuevo = !ctx.id && editableClienteBus && !e.clienteId ? (nuevos?.cliente ?? null) : null;
+  const busNuevo = !ctx.id && editableClienteBus && !e.busId && (e.clienteId || clienteNuevo) && (nuevos?.bus?.nombre || nuevos?.bus?.placa) ? nuevos!.bus : null;
+  const faltaCliente = !ctx.trabajoId && !e.clienteId && !clienteNuevo;
   const incompletas = lineasIncompletas(e);
   const dudosas = e.secciones.reduce((a, s) => a + s.lineas.filter(tieneDuda).length, 0);
   const guardar = useMutation({
     mutationFn: async (): Promise<number> => {
-      const datos = aEntrada(e, { trabajoId: ctx.id ? null : ctx.trabajoId });
+      // Lo leído de una hoja que no estaba en la lista se crea primero. Cada uno se anota en el
+      // estado apenas se crea, para no repetirlo si después algo falla y se vuelve a guardar.
+      let { clienteId, busId } = e;
+      if (clienteNuevo) {
+        clienteId = (await enviar<{ id: number }>("POST", "/clientes", { nombre: clienteNuevo })).id;
+        const id = clienteId;
+        mutar((d) => void (d.clienteId = id));
+        setNuevos((n) => n && { ...n, cliente: null });
+      }
+      if (busNuevo && clienteId) {
+        busId = (await enviar<{ id: number }>("POST", "/buses", { clienteId, nombre: busNuevo.nombre ?? undefined, placa: busNuevo.placa ?? undefined })).id;
+        const id = busId;
+        mutar((d) => void (d.busId = id));
+        setNuevos((n) => n && { ...n, bus: null });
+      }
+      const datos = aEntrada({ ...e, clienteId, busId }, { trabajoId: ctx.id ? null : ctx.trabajoId });
       if (ctx.id) {
         await enviar("PUT", `/presupuestos/${ctx.id}`, datos);
         return ctx.id;
@@ -245,11 +266,14 @@ export function Editor({
                           })}
                           permitirVacio={false}
                           placeholder="Buscar cliente…"
-                          autoFocus={!ctx.id && !e.clienteId}
+                          autoFocus={!ctx.id && !e.clienteId && !clienteNuevo}
                         />
                       </div>
                       <Boton onClick={() => setNuevoCliente(true)} title="Cliente nuevo">+</Boton>
                     </div>
+                    {clienteNuevo && (
+                      <NuevoAlGuardar texto={clienteNuevo} onQuitar={() => setNuevos((n) => n && { ...n, cliente: null })} />
+                    )}
                   </Campo>
                   <Campo etiqueta="Bus (placa o nombre)">
                     <div className="flex gap-2">
@@ -258,6 +282,9 @@ export function Editor({
                       </div>
                       <Boton onClick={() => setNuevoBus(true)} disabled={!e.clienteId} title="Bus nuevo">+</Boton>
                     </div>
+                    {busNuevo && (
+                      <NuevoAlGuardar texto={[busNuevo.placa, busNuevo.nombre].filter(Boolean).join(" / ")} onQuitar={() => setNuevos((n) => n && { ...n, bus: null })} />
+                    )}
                   </Campo>
                 </>
               ) : (
@@ -594,6 +621,20 @@ export function Editor({
         <p>Si sales ahora se pierden los cambios de este presupuesto.</p>
       </Confirmar>
     </section>
+  );
+}
+
+/** "Nuevo: X — se crea al guardar" debajo de Cliente o Bus (lo leído de una hoja que no estaba en la lista). */
+function NuevoAlGuardar({ texto, onQuitar }: { texto: string; onQuitar: () => void }) {
+  return (
+    <span className="flex flex-wrap items-center gap-x-2 text-xs text-emerald-800">
+      <span>
+        Nuevo: <b>{texto}</b> — se crea al guardar.
+      </span>
+      <button type="button" className="text-slate-500 underline hover:text-slate-800" onClick={onQuitar}>
+        No crear
+      </button>
+    </span>
   );
 }
 
